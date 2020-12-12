@@ -13,6 +13,7 @@ steps:
       keyfile: "common/config/rush/pnpm-lock.yaml"
       targetfolder: "common/temp/"
       vstsFeed: $(ArtifactFeed)
+      alias: dependencies
   - script: node common/scripts/install-run-rush.js check
     displayName: rush check
     workingDirectory: ${{ parameters.workingDir }}
@@ -58,7 +59,12 @@ steps:
       arguments: $(Build.SourceBranch) $(Build.Reason) $(System.PullRequest.TargetBranch)
       failOnStderr: true
 
-  - script: node common/scripts/install-run-rush.js install
+  - script: node common/scripts/install-run-rush.js install --no-link
+    displayName: rush install
+    workingDirectory: ${{ parameters.workingDir }}
+    condition: ne(variables['CacheRestored'], 'true')
+
+  - script: node common/scripts/install-run-rush.js link
     displayName: rush install
     workingDirectory: ${{ parameters.workingDir }}
 
