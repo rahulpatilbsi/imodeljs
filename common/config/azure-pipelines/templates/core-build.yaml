@@ -50,9 +50,19 @@ steps:
 
       arguments: $(Build.SourceBranch) $(Build.Reason) $(System.PullRequest.TargetBranch)
       failOnStderr: true
+
+  # The following tasks are here to help speed up build times by not using the
+  - task: 1ESLighthouseEng.PipelineArtifactCaching.RestoreAndSaveCacheV1.RestoreAndSaveCache@1
+    displayName: restore 'rush install' cache
+    inputs:
+      keyfile: "common/config/rush/pnpm-lock.yaml"
+      targetfolder: "common/temp/pnpm-store/2/registry.npmjs.org"
+      vstsFeed: $(ArtifactFeed)
+
   - script: node common/scripts/install-run-rush.js install
     displayName: rush install
     workingDirectory: ${{ parameters.workingDir }}
+
   - script: node common/scripts/install-run-rush.js audit
     displayName: rush audit
     workingDirectory: ${{ parameters.workingDir }}
