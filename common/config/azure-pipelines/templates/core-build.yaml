@@ -56,7 +56,7 @@ steps:
     displayName: restore 'rush install' cache
     inputs:
       keyfile: "common/config/rush/pnpm-lock.yaml"
-      targetfolder: "common/temp/pnpm-store/2/registry.npmjs.org"
+      targetfolder: "common/temp/"
       vstsFeed: $(ArtifactFeed)
 
   - script: node common/scripts/install-run-rush.js install
