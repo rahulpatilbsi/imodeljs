@@ -16,7 +16,7 @@ steps:
       alias: dependencies
   - script: find . -maxdepth 3 -type d -exec ls -ld "{}" \;
     workingDirectory: ${{ parameters.workingDir }}/common/temp/
-    condition: and(succeeded(), ne(variables['CacheRestored-dependencies'], 'true'))
+    condition: and(succeeded(), eq(variables['CacheRestored-dependencies'], 'true'))
   - script: node common/scripts/install-run-rush.js check
     displayName: rush check
     workingDirectory: ${{ parameters.workingDir }}
