@@ -114,7 +114,7 @@ steps:
        print ("All packages are up-to-date.")
 
     arguments: '$(Build.ArtifactStagingDirectory) $(Build.SourcesDirectory) $(Build.SourceBranch)'
-    condition: and(succeeded(), in(variables['Build.Reason'], 'IndividualCI', 'Schedule', 'Manual'), eq(variables['Agent.OS'], 'Windows_NT'))
+  condition: and(succeeded(), in(variables['Build.Reason'], 'IndividualCI', 'Schedule', 'Manual'), eq(variables['Agent.OS'], 'Windows_NT'))
 
 - task: PublishBuildArtifacts@1
   displayName: 'Publish Artifact: packages'
