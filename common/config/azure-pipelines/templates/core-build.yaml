@@ -10,7 +10,7 @@ steps:
   - task: 1ESLighthouseEng.PipelineArtifactCaching.RestoreAndSaveCacheV1.RestoreAndSaveCache@1
     displayName: restore 'rush install' cache
     inputs:
-      keyfile: "${{ parameters.workingDir }}/common/config/rush/pnpm-lock.yaml"
+      keyfile: "${{ parameters.workingDir }}/common/config/rush/pnpm-lock.yaml, ${{ parameters.workingDir }}/common/config/azure-pipelines/templates/core-build.yaml"
       targetfolder: "${{ parameters.workingDir }}/common/temp/"
       vstsFeed: $(ArtifactFeed)
       alias: dependencies
