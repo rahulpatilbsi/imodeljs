@@ -10,10 +10,12 @@ steps:
   - task: 1ESLighthouseEng.PipelineArtifactCaching.RestoreAndSaveCacheV1.RestoreAndSaveCache@1
     displayName: restore 'rush install' cache
     inputs:
-      keyfile: "common/config/rush/pnpm-lock.yaml"
-      targetfolder: "common/temp/"
+      keyfile: "${{ parameters.workingDir }}/common/config/rush/pnpm-lock.yaml"
+      targetfolder: "${{ parameters.workingDir }}/common/temp/"
       vstsFeed: $(ArtifactFeed)
       alias: dependencies
+  - script: find . -maxdepth 3 -type d -exec ls -ld "{}" \;
+    workingDirectory: ${{ parameters.workingDir }}/common/temp/
   - script: node common/scripts/install-run-rush.js check
     displayName: rush check
     workingDirectory: ${{ parameters.workingDir }}
@@ -62,7 +64,7 @@ steps:
   - script: node common/scripts/install-run-rush.js install --no-link
     displayName: rush install
     workingDirectory: ${{ parameters.workingDir }}
-    condition: ne(variables['CacheRestored'], 'true')
+    condition: ne(variables['CacheRestored-dependencies'], 'true')
 
   - script: node common/scripts/install-run-rush.js link
     displayName: rush install
