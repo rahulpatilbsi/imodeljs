@@ -65,7 +65,6 @@ steps:
   - script: node common/scripts/install-run-rush.js install --no-link
     displayName: rush install
     workingDirectory: ${{ parameters.workingDir }}
-    condition: and(succeeded(), ne(variables['CacheRestored-dependencies'], 'true'))
 
   - script: node common/scripts/install-run-rush.js link
     displayName: rush install
