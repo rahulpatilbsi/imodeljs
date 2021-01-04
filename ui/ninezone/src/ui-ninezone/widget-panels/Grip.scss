@@ -6,7 +6,7 @@
 @import "variables";
 
 @mixin hover-style {
-  background-color: $buic-accessory-primary;
+  background-color: $buic-background-primary;
 
   > .nz-dot {
     background-color: $buic-foreground-accessory;

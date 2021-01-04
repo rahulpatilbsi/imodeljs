@@ -21,7 +21,7 @@ $toggle-handle-large: $toggle-height-large - ($toggle-padding * 2);
   position: relative;
   display: inline-block;
   border-radius: 3px;
-  color: $uicore-white;
+  background-color: $buic-background-1;
   vertical-align: middle;
   overflow: hidden;
   font-size: $uicore-font-size;
@@ -30,6 +30,7 @@ $toggle-handle-large: $toggle-height-large - ($toggle-padding * 2);
   margin:         2px;
   box-shadow:     $buic-inputs-boxshadow 0px 1px 1px inset;
   transition:     all 0.15s ease-in-out;
+  border: 1px solid $buic-foreground-muted;
 
   &:active,
   &:focus-within {
@@ -58,28 +59,29 @@ $toggle-handle-large: $toggle-height-large - ($toggle-padding * 2);
   position:       relative;
   display:        block;
   height:         inherit;
-  background:     $uicore-gray-6;
-  color:          $uicore-white;
+  background:     $buic-background-1;
+  color:          $buic-background-1;
   border-radius:  inherit;
   transition:     box-shadow 0.15s ease-in-out;
 }
 
 /* Blue (default) */
 .core-toggle-input:checked~.core-toggle-background {
-  background: $buic-accessory-primary;
+  background: $buic-background-primary;
 }
 
 /* Green (primary) */
 .core-toggle-primary> .core-toggle-input:checked~.core-toggle-background {
-  background: $buic-accessory-success;
+  background: $buic-background-success;
 }
 
 .core-toggle-handle {
   position: absolute;
-  background: $buic-accessory-hollow;
+  background: $buic-foreground-body;
+  opacity: $buic-opacity-2;
   border-radius: 3px;
   box-sizing:     border-box;
-  border:         1px solid $buic-accessory-hollow;
+  border:         1px solid $buic-foreground-body;
   transition:     border-color 0.15s ease-in-out;
 
   min-width:  $toggle-handle-small;
@@ -88,6 +90,11 @@ $toggle-handle-large: $toggle-height-large - ($toggle-padding * 2);
   &.core-toggling {
     transition: transform 0.2s ease-out;
   }
+}
+.core-toggle-input:checked~.core-toggle-handle {
+  background: $buic-foreground-accessory;
+  opacity: $buic-opacity-2;
+  border:     1px solid $buic-foreground-accessory;
 }
 
 /* Disabled toggle */

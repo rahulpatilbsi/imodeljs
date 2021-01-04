@@ -42,7 +42,7 @@
       border: 1px solid var(--buic-background-toolbutton-stroke);
 
       &:hover {
-        color: var(--buic-accessory-primary-tint);
+        color: var(--buic-background-primary-tint);
       }
       &:focus {
         box-shadow: $uicore-button-focus-boxshadow;

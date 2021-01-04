@@ -30,34 +30,34 @@
   }
 
   &.nz-status-information {
-    border-color: $buic-accessory-primary;
+    border-color: $buic-background-primary;
 
     > .nz-icon {
-      background-color: $buic-accessory-primary;
+      background-color: $buic-background-primary;
     }
   }
 
   &.nz-status-success {
-    border-color: $buic-accessory-success;
+    border-color: $buic-background-success;
 
     > .nz-icon {
-      background-color: $buic-accessory-success;
+      background-color: $buic-background-success;
     }
   }
 
   &.nz-status-error {
-    border-color: $buic-accessory-alert;
+    border-color: $buic-background-alert;
 
     > .nz-icon {
-      background-color: $buic-accessory-alert;
+      background-color: $buic-background-alert;
     }
   }
 
   &.nz-status-warning {
-    border-color: $buic-accessory-warning;
+    border-color: $buic-background-warning;
 
     > .nz-icon {
-      background-color: $buic-accessory-warning;
+      background-color: $buic-background-warning;
     }
   }
 }

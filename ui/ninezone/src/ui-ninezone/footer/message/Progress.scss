@@ -37,40 +37,43 @@
 
   &.nz-status-information {
     > .nz-progress {
-      background-color: $buic-accessory-primary-tint;
+      background-color: $buic-background-primary;
 
       > .nz-progress-bar {
-        background-color: $buic-accessory-primary;
+        background-color: $buic-background-primary;
       }
     }
   }
 
   &.nz-status-success {
     > .nz-progress {
-      background-color: $buic-accessory-success-tint;
+      background-color: $buic-background-success;
+      filter: brightness(1.05);
 
       > .nz-progress-bar {
-        background-color: $buic-accessory-success;
+        background-color: $buic-background-success;
       }
     }
   }
 
   &.nz-status-error {
     > .nz-progress {
-      background-color: $buic-accessory-alert-tint;
+      background-color: $buic-background-alert;
+      filter: brightness(1.05);
 
       > .nz-progress-bar {
-        background-color: $buic-accessory-alert;
+        background-color: $buic-background-alert;
       }
     }
   }
 
   &.nz-status-warning {
     > .nz-progress {
-      background-color: $buic-accessory-warning-tint;
+      background-color: $buic-background-warning;
+      filter: brightness(1.05);
 
       > .nz-progress-bar {
-        background-color: $buic-accessory-warning;
+        background-color: $buic-background-warning;
       }
     }
   }
