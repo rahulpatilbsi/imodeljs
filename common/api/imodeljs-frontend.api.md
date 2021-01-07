@@ -58,7 +58,6 @@ import { DialogPropertyItem } from '@bentley/ui-abstract';
 import { DialogPropertySyncItem } from '@bentley/ui-abstract';
 import { Dictionary } from '@bentley/bentleyjs-core';
 import { DisplayStyle3dSettings } from '@bentley/imodeljs-common';
-import { DisplayStyle3dSettingsProps } from '@bentley/imodeljs-common';
 import { DisplayStyleProps } from '@bentley/imodeljs-common';
 import { DisplayStyleSettings } from '@bentley/imodeljs-common';
 import { DisplayStyleSettingsProps } from '@bentley/imodeljs-common';
@@ -171,6 +170,7 @@ import { ModelProps } from '@bentley/imodeljs-common';
 import { ModelQueryParams } from '@bentley/imodeljs-common';
 import { ModelSelectorProps } from '@bentley/imodeljs-common';
 import { MonochromeMode } from '@bentley/imodeljs-common';
+import { ObservableSet } from '@bentley/bentleyjs-core';
 import { OctEncodedNormal } from '@bentley/imodeljs-common';
 import { OpenBriefcaseProps } from '@bentley/imodeljs-common';
 import { OpenMode } from '@bentley/bentleyjs-core';
@@ -222,6 +222,7 @@ import { RequestBasicCredentials } from '@bentley/itwin-client';
 import { RequestOptions } from '@bentley/itwin-client';
 import { RgbColor } from '@bentley/imodeljs-common';
 import { RpcRoutingToken } from '@bentley/imodeljs-common';
+import { SectionDrawingViewProps } from '@bentley/imodeljs-common';
 import { SettingsAdmin } from '@bentley/product-settings-client';
 import { SheetProps } from '@bentley/imodeljs-common';
 import { SilhouetteEdgeArgs } from '@bentley/imodeljs-common';
@@ -1497,6 +1498,9 @@ export interface CachedIModelCoordinatesResponseProps {
     result: Array<PointWithStatus | undefined>;
 }
 
+// @internal (undocumented)
+export function calculateEcefToDbTransformAtLocation(originIn: Point3d, iModel: IModelConnection): Promise<Transform | undefined>;
+
 // @public
 export interface CanvasDecoration {
     decorationCursor?: string;
@@ -1524,7 +1528,8 @@ export class CategorySelectorState extends ElementState {
     constructor(props: CategorySelectorProps, iModel: IModelConnection);
     addCategories(arg: Id64Arg): void;
     // (undocumented)
-    categories: Set<string>;
+    get categories(): Set<string>;
+    set categories(categories: Set<string>);
     changeCategoryDisplay(arg: Id64Arg, add: boolean): void;
     // @internal (undocumented)
     static get className(): string;
@@ -1533,6 +1538,8 @@ export class CategorySelectorState extends ElementState {
     has(id: Id64String): boolean;
     isCategoryViewed(categoryId: Id64String): boolean;
     get name(): string;
+    // @internal (undocumented)
+    get observableCategories(): ObservableSet<string>;
     // (undocumented)
     toJSON(): CategorySelectorProps;
 }
@@ -2043,9 +2050,9 @@ export class DisplayStyle3dState extends DisplayStyleState {
     // @internal
     loadSkyBoxParams(system: RenderSystem, vp?: Viewport): SkyBox.CreateParams | undefined;
     // @internal (undocumented)
-    protected onOverridesApplied(overrides: DisplayStyle3dSettingsProps): void;
-    // @internal (undocumented)
     overrideTerrainSkirtDisplay(): boolean | undefined;
+    // @internal (undocumented)
+    protected registerSettingsEventListeners(): void;
     setSunTime(time: number): void;
     // (undocumented)
     get settings(): DisplayStyle3dSettings;
@@ -2168,8 +2175,6 @@ export abstract class DisplayStyleState extends ElementState implements DisplayS
     moveMapLayerToTop(index: number, isOverlay: boolean): void;
     get name(): string;
     // @internal (undocumented)
-    protected onOverridesApplied(overrides: DisplayStyleSettingsProps): void;
-    // @internal (undocumented)
     get overlayMap(): MapTileTreeReference;
     // @internal (undocumented)
     get overlayMapLayers(): MapLayerSettings[];
@@ -2180,6 +2185,8 @@ export abstract class DisplayStyleState extends ElementState implements DisplayS
     overrideSubCategory(id: Id64String, ovr: SubCategoryOverride): void;
     // @internal (undocumented)
     abstract overrideTerrainSkirtDisplay(): boolean | undefined;
+    // @internal (undocumented)
+    protected registerSettingsEventListeners(): void;
     // @internal (undocumented)
     get scheduleScript(): RenderScheduleState.Script | undefined;
     set scheduleScript(script: RenderScheduleState.Script | undefined);
@@ -2221,15 +2228,49 @@ export class DrawingModelState extends GeometricModel2dState {
 
 // @public
 export class DrawingViewState extends ViewState2d {
-    constructor(props: ViewDefinition2dProps, iModel: IModelConnection, categories: CategorySelectorState, displayStyle: DisplayStyle2dState, extents: AxisAlignedBox3d);
+    constructor(props: ViewDefinition2dProps, iModel: IModelConnection, categories: CategorySelectorState, displayStyle: DisplayStyle2dState, extents: AxisAlignedBox3d, sectionDrawing?: SectionDrawingViewProps);
+    // @internal
+    static alwaysDisplaySpatialView: boolean;
+    // @internal (undocumented)
+    get areAllTileTreesLoaded(): boolean;
+    // @internal
+    get attachment(): Object | undefined;
+    // @internal
+    get attachmentInfo(): Object;
+    // @internal (undocumented)
+    attachToViewport(): void;
+    // @internal (undocumented)
+    changeViewedModel(modelId: Id64String): Promise<void>;
     // @internal (undocumented)
     static get className(): string;
     // (undocumented)
     static createFromProps(props: ViewStateProps, iModel: IModelConnection): DrawingViewState;
+    // @internal (undocumented)
+    createScene(context: SceneContext): void;
     // (undocumented)
     get defaultExtentLimits(): ExtentLimits;
+    // @internal (undocumented)
+    detachFromViewport(): void;
+    // @internal (undocumented)
+    discloseTileTrees(trees: TileTreeSet): void;
+    // @internal (undocumented)
+    getExtents(): Vector3d;
+    // @internal (undocumented)
+    getOrigin(): import("@bentley/geometry-core").Point3d;
     // (undocumented)
     getViewedExtents(): AxisAlignedBox3d;
+    // @internal
+    static hideDrawingGraphics: boolean;
+    // @internal (undocumented)
+    isDrawingView(): this is DrawingViewState;
+    // @internal (undocumented)
+    load(): Promise<void>;
+    // @internal
+    get sectionDrawingInfo(): SectionDrawingInfo;
+    // @internal
+    get sectionDrawingProps(): SectionDrawingViewProps | undefined;
+    // (undocumented)
+    toProps(): ViewStateProps;
     }
 
 // @internal
@@ -3054,6 +3095,17 @@ export namespace Frustum2d {
     export function depthFromDisplayPriority(priority: number): number;
 }
 
+// @internal
+export class FrustumAnimator implements Animator {
+    constructor(options: ViewAnimationOptions, viewport: ScreenViewport, begin: ViewPose, end: ViewPose);
+    // (undocumented)
+    animate(): boolean;
+    // (undocumented)
+    interrupt(): void;
+    // (undocumented)
+    options: ViewAnimationOptions;
+    }
+
 // @public (undocumented)
 export class FuzzySearch<T> {
     onGetMultiWordSearchOptions(): Fuse.FuseOptions<T>;
@@ -3208,6 +3260,16 @@ export interface GlobalLocationArea {
     // (undocumented)
     southwest: Cartographic;
 }
+
+// @internal
+export class GlobeAnimator implements Animator {
+    // (undocumented)
+    animate(): boolean;
+    // (undocumented)
+    static create(viewport: ScreenViewport, destination: GlobalLocation): Promise<GlobeAnimator | undefined>;
+    // (undocumented)
+    interrupt(): void;
+    }
 
 // @internal
 export abstract class GltfReader {
@@ -3445,6 +3507,8 @@ export abstract class GraphicBuilder {
     pickId?: string;
     get placement(): Transform;
     set placement(tf: Transform);
+    // @beta
+    preserveOrder: boolean;
     setBlankingFill(fillColor: ColorDef): void;
     setSymbology(lineColor: ColorDef, fillColor: ColorDef, lineWidth: number, linePixels?: LinePixels): void;
     readonly type: GraphicType;
@@ -5598,7 +5662,7 @@ export class MobileAuthorizationClient extends ImsAuthorizationClient implements
     initialize(requestContext: ClientRequestContext): Promise<void>;
     get isAuthorized(): boolean;
     // (undocumented)
-    readonly onUserStateChanged: BeEvent<(token: AccessToken | undefined, message: string) => void>;
+    readonly onUserStateChanged: BeEvent<(token: AccessToken | undefined, message?: string | undefined) => void>;
     signIn(requestContext: ClientRequestContext): Promise<void>;
     signOut(requestContext: ClientRequestContext): Promise<void>;
 }
@@ -5730,6 +5794,9 @@ export namespace MockRender {
         // (undocumented)
         get renderSystem(): RenderSystem;
         // (undocumented)
+        get screenSpaceEffects(): Iterable<string>;
+        set screenSpaceEffects(_effects: Iterable<string>);
+        // (undocumented)
         updateViewRect(): boolean;
         // (undocumented)
         get wantInvertBlackBackground(): boolean;
@@ -5750,7 +5817,7 @@ export interface ModalReturn {
     stop: (_ev: Event) => void;
 }
 
-// @internal
+// @alpha
 export interface ModelDisplayTransformProvider {
     // (undocumented)
     getModelDisplayTransform(modelId: Id64String, baseTransform: Transform): Transform;
@@ -5767,8 +5834,11 @@ export class ModelSelectorState extends ElementState {
     equalState(other: ModelSelectorState): boolean;
     has(id: string): boolean;
     load(): Promise<void>;
-    readonly models: Set<string>;
+    get models(): Set<string>;
+    set models(models: Set<string>);
     get name(): string;
+    // @internal (undocumented)
+    get observableModels(): ObservableSet<string>;
     // (undocumented)
     toJSON(): ModelSelectorProps;
 }
@@ -5965,6 +6035,9 @@ export class NullTarget extends RenderTarget {
     get renderSystem(): any;
     // (undocumented)
     reset(): void;
+    // (undocumented)
+    get screenSpaceEffects(): Iterable<string>;
+    set screenSpaceEffects(_effects: Iterable<string>);
     // (undocumented)
     setFlashed(): void;
     // (undocumented)
@@ -6270,12 +6343,15 @@ export class PerformanceMetrics {
 
 // @beta
 export namespace PerModelCategoryVisibility {
+    // (undocumented)
+    export function createOverrides(viewport: Viewport): PerModelCategoryVisibility.Overrides;
     export enum Override {
         Hide = 2,
         None = 0,
         Show = 1
     }
     export interface Overrides {
+        addOverrides(fs: FeatureSymbology.Overrides, ovrs: Id64.Uint32Map<Id64.Uint32Set>): void;
         clearOverrides(modelIds?: Id64Arg): void;
         forEachOverride(func: (modelId: Id64String, categoryId: Id64String, visible: boolean) => boolean): boolean;
         getOverride(modelId: Id64String, categoryId: Id64String): Override;
@@ -7190,7 +7266,7 @@ export namespace RenderScheduleState {
         // (undocumented)
         displayStyleId: Id64String;
         // (undocumented)
-        static fromJSON(displayStyleId: Id64String, modelTimelines: RenderSchedule.ModelTimelineProps[]): Script | undefined;
+        static fromJSON(displayStyleId: Id64String, modelTimelines: Readonly<RenderSchedule.ModelTimelineProps[]>): Script | undefined;
         // (undocumented)
         getAnimationBranches(scheduleTime: number): AnimationBranchStates | undefined;
         getCachedDuration(): Range1d;
@@ -7300,6 +7376,8 @@ export abstract class RenderSystem implements IDisposable {
     createPointString(_params: PointStringParams, _instances?: InstancedGraphicParams | Point3d): RenderGraphic | undefined;
     // @internal (undocumented)
     createPolyline(_params: PolylineParams, _instances?: InstancedGraphicParams | Point3d): RenderGraphic | undefined;
+    // @beta
+    createScreenSpaceEffectBuilder(_params: ScreenSpaceEffectBuilderParams): ScreenSpaceEffectBuilder | undefined;
     createSkyBox(_params: SkyBox.CreateParams): RenderGraphic | undefined;
     // @internal (undocumented)
     abstract createTarget(canvas: HTMLCanvasElement): RenderTarget;
@@ -7453,6 +7531,8 @@ export abstract class RenderTarget implements IDisposable, RenderMemory.Consumer
     abstract get renderSystem(): RenderSystem;
     // (undocumented)
     reset(): void;
+    abstract get screenSpaceEffects(): Iterable<string>;
+    abstract set screenSpaceEffects(_effectNames: Iterable<string>);
     // (undocumented)
     setFlashed(_elementId: Id64String, _intensity: number): void;
     // (undocumented)
@@ -7642,6 +7722,35 @@ export interface SceneVolumeClassifier {
     modelId: Id64String;
 }
 
+// @beta
+export interface ScreenSpaceEffectBuilder {
+    addUniform: (params: UniformParams) => void;
+    addUniformArray: (params: UniformArrayParams) => void;
+    addVarying: (name: string, type: VaryingType) => void;
+    finish: () => void;
+    readonly isWebGL2: boolean;
+    shouldApply?: (context: ScreenSpaceEffectContext) => boolean;
+}
+
+// @beta
+export interface ScreenSpaceEffectBuilderParams {
+    name: string;
+    source: ScreenSpaceEffectSource;
+    textureCoordFromPosition?: boolean;
+}
+
+// @beta
+export interface ScreenSpaceEffectContext {
+    viewport: Viewport;
+}
+
+// @beta
+export interface ScreenSpaceEffectSource {
+    fragment: string;
+    sampleSourcePixel?: string;
+    vertex: string;
+}
+
 // @public
 export class ScreenViewport extends Viewport {
     // @internal
@@ -7738,6 +7847,14 @@ export class ScrollViewTool extends ViewManip {
     onReinitialize(): void;
     // (undocumented)
     static toolId: string;
+}
+
+// @internal
+export interface SectionDrawingInfo {
+    // (undocumented)
+    readonly drawingToSpatialTransform: Transform;
+    // (undocumented)
+    readonly spatialView: Id64String;
 }
 
 // @public
@@ -8066,9 +8183,13 @@ export class SheetViewState extends ViewState2d {
     // @internal (undocumented)
     get areAllTileTreesLoaded(): boolean;
     // (undocumented)
-    readonly attachmentIds: Id64Array;
+    get attachmentIds(): Id64Array;
     // @internal
-    attachViews(attachments: ViewAttachmentProps[]): Promise<void>;
+    get attachments(): Object[] | undefined;
+    // @internal (undocumented)
+    attachToViewport(): void;
+    // @internal (undocumented)
+    changeViewedModel(modelId: Id64String): Promise<void>;
     // @internal (undocumented)
     static get className(): string;
     // @internal (undocumented)
@@ -8086,8 +8207,8 @@ export class SheetViewState extends ViewState2d {
         min: number;
         max: number;
     };
-    // @internal
-    detachViews(): void;
+    // @internal (undocumented)
+    detachFromViewport(): void;
     // @internal
     discloseTileTrees(trees: TileTreeSet): void;
     // (undocumented)
@@ -8096,9 +8217,15 @@ export class SheetViewState extends ViewState2d {
     getOrigin(): Point3d;
     // @internal (undocumented)
     getViewedExtents(): AxisAlignedBox3d;
+    // @internal (undocumented)
+    isDrawingView(): this is DrawingViewState;
     // @internal
     load(): Promise<void>;
     readonly sheetSize: Point2d;
+    // (undocumented)
+    toProps(): ViewStateProps;
+    // @internal
+    get viewAttachmentProps(): Array<Readonly<ViewAttachmentProps>>;
     }
 
 // @internal
@@ -8330,6 +8457,8 @@ export class SpatialViewState extends ViewState3d {
     // (undocumented)
     addViewedModel(id: Id64String): void;
     // @internal (undocumented)
+    attachToViewport(): void;
+    // @internal (undocumented)
     static get className(): string;
     // (undocumented)
     clearViewedModels(): void;
@@ -8347,6 +8476,8 @@ export class SpatialViewState extends ViewState3d {
         min: number;
         max: number;
     };
+    // @internal (undocumented)
+    detachFromViewport(): void;
     // (undocumented)
     equals(other: this): boolean;
     // (undocumented)
@@ -8356,16 +8487,23 @@ export class SpatialViewState extends ViewState3d {
     protected getDisplayedExtents(): AxisAlignedBox3d;
     // (undocumented)
     getViewedExtents(): AxisAlignedBox3d;
+    // @internal (undocumented)
+    isSpatialView(): this is SpatialViewState;
     // (undocumented)
     load(): Promise<void>;
     // @internal (undocumented)
     markModelSelectorChanged(): void;
     // (undocumented)
-    modelSelector: ModelSelectorState;
+    get modelSelector(): ModelSelectorState;
+    set modelSelector(selector: ModelSelectorState);
+    // @beta
+    readonly onViewedModelsChanged: BeEvent<() => void>;
     // (undocumented)
     removeViewedModel(id: Id64String): void;
     // (undocumented)
     toJSON(): SpatialViewDefinitionProps;
+    // (undocumented)
+    toProps(): ViewStateProps;
     // (undocumented)
     viewsModel(modelId: Id64String): boolean;
 }
@@ -8773,6 +8911,11 @@ export abstract class Target extends RenderTarget implements RenderTargetDebugCo
     // (undocumented)
     reset(): void;
     // (undocumented)
+    get screenSpaceEffectContext(): ScreenSpaceEffectContext;
+    // (undocumented)
+    get screenSpaceEffects(): Iterable<string>;
+    set screenSpaceEffects(effects: Iterable<string>);
+    // (undocumented)
     setFlashed(id: Id64String, intensity: number): void;
     // (undocumented)
     setHiliteSet(hilite: HiliteSet): void;
@@ -9111,7 +9254,7 @@ export abstract class TileAdmin {
     // @internal (undocumented)
     abstract onTileTimedOut(tile: Tile): void;
     // @internal
-    readonly onTileTreeLoad: BeEvent<(tileTree: TileTree) => void>;
+    readonly onTileTreeLoad: BeEvent<(tileTree: TileTreeOwner) => void>;
     // @internal
     abstract process(): void;
     // @internal
@@ -9471,6 +9614,7 @@ export enum TileTreeLoadStatus {
 export interface TileTreeOwner {
     // @internal
     dispose(): void;
+    readonly iModel: IModelConnection;
     load(): TileTree | undefined;
     readonly loadStatus: TileTreeLoadStatus;
     loadTree(): Promise<TileTree | undefined>;
@@ -10012,6 +10156,44 @@ export class TwoWayViewportSync {
     disconnect(): void;
     }
 
+// @beta
+export interface Uniform {
+    setUniform1f: (value: number) => void;
+    setUniform1fv: (value: Float32Array | number[]) => void;
+    setUniform1i: (value: number) => void;
+    setUniform1iv: (value: Int32Array | number[]) => void;
+    setUniform2fv: (value: Float32Array | number[]) => void;
+    setUniform3fv: (value: Float32Array | number[]) => void;
+    setUniform4fv: (value: Float32Array | number[]) => void;
+}
+
+// @beta
+export interface UniformArrayParams extends UniformParams {
+    length: number;
+}
+
+// @beta
+export interface UniformContext {
+    viewport: Viewport;
+}
+
+// @beta
+export interface UniformParams {
+    bind: (uniform: Uniform, context: UniformContext) => void;
+    name: string;
+    type: UniformType;
+}
+
+// @beta
+export enum UniformType {
+    Bool = 0,
+    Float = 2,
+    Int = 1,
+    Vec2 = 3,
+    Vec3 = 4,
+    Vec4 = 5
+}
+
 // @internal (undocumented)
 export class UpsampledMapTile extends MapTile {
     // (undocumented)
@@ -10053,6 +10235,14 @@ export enum UsesSelection {
     Check = 0,
     None = 2,
     Required = 1
+}
+
+// @beta
+export enum VaryingType {
+    Float = 0,
+    Vec2 = 1,
+    Vec3 = 2,
+    Vec4 = 3
 }
 
 // @public
@@ -11004,12 +11194,16 @@ export abstract class Viewport implements IDisposable {
     // @internal
     addModelSubCategoryVisibilityOverrides(fs: FeatureSymbology.Overrides, ovrs: Id64.Uint32Map<Id64.Uint32Set>): void;
     // @beta
+    addScreenSpaceEffect(effectName: string): void;
+    // @beta
     addTiledGraphicsProvider(provider: TiledGraphicsProvider): void;
     addViewedModels(models: Id64Arg): Promise<void>;
     get alwaysDrawn(): Id64Set | undefined;
     // @alpha (undocumented)
     get analysisFraction(): number;
     set analysisFraction(fraction: number);
+    // @internal (undocumented)
+    get analysisFractionValid(): boolean;
     // @internal (undocumented)
     get analysisStyle(): AnalysisStyle | undefined;
     // @beta
@@ -11166,7 +11360,6 @@ export abstract class Viewport implements IDisposable {
     isSubCategoryVisible(id: Id64String): boolean;
     // @internal
     lastFlashedElem?: string;
-    // (undocumented)
     get lightSettings(): LightSettings | undefined;
     // @internal (undocumented)
     markSelectionSetDirty(): void;
@@ -11187,6 +11380,8 @@ export abstract class Viewport implements IDisposable {
     readonly onFeatureOverridesChanged: BeEvent<(vp: Viewport) => void>;
     readonly onNeverDrawnChanged: BeEvent<(vp: Viewport) => void>;
     readonly onRender: BeEvent<(vp: Viewport) => void>;
+    // @beta
+    readonly onResized: BeEvent<(vp: Viewport) => void>;
     readonly onViewChanged: BeEvent<(vp: Viewport) => void>;
     readonly onViewedCategoriesChanged: BeEvent<(vp: Viewport) => void>;
     readonly onViewedCategoriesPerModelChanged: BeEvent<(vp: Viewport) => void>;
@@ -11218,6 +11413,8 @@ export abstract class Viewport implements IDisposable {
     readPixels(rect: ViewRect, selector: Pixel.Selector, receiver: Pixel.Receiver, excludeNonLocatable?: boolean): void;
     // @internal
     refreshForModifiedModels(modelIds: Id64Arg | undefined): void;
+    // @beta
+    removeScreenSpaceEffects(): void;
     // @internal (undocumented)
     renderFrame(): void;
     // @internal (undocumented)
@@ -11225,10 +11422,18 @@ export abstract class Viewport implements IDisposable {
     // @internal (undocumented)
     protected _renderPlanValid: boolean;
     replaceViewedModels(modelIds: Id64Arg): Promise<void>;
+    requestRedraw(): void;
     get rotation(): Matrix3d;
     // @internal (undocumented)
+    get sceneValid(): boolean;
+    // @internal (undocumented)
     protected _sceneValid: boolean;
+    // @beta
+    get screenSpaceEffects(): Iterable<string>;
+    set screenSpaceEffects(effects: Iterable<string>);
     scroll(screenDist: XAndY, options?: ViewChangeOptions): void;
+    // @internal
+    setAllValid(): void;
     setAlwaysDrawn(ids: Id64Set, exclusive?: boolean): void;
     // @beta
     setAnimator(animator?: Animator): void;
@@ -11242,7 +11447,7 @@ export abstract class Viewport implements IDisposable {
     setNeverDrawn(ids: Id64Set): void;
     // @beta
     setOSMBuildingDisplay(options: OsmBuildingDisplayOptions): void;
-    // @internal (undocumented)
+    // @internal @deprecated (undocumented)
     setRedrawPending(): void;
     // @internal (undocumented)
     setRenderPlanValid(): void;
@@ -11268,6 +11473,8 @@ export abstract class Viewport implements IDisposable {
     // @beta
     get timePoint(): number | undefined;
     set timePoint(time: number | undefined);
+    // @internal (undocumented)
+    get timePointValid(): boolean;
     // @internal (undocumented)
     toViewOrientation(from: XYZ, to?: XYZ): void;
     turnCameraOn(lensAngle?: Angle): ViewStatus;
@@ -11449,12 +11656,15 @@ export abstract class ViewState extends ElementState {
     abstract applyPose(props: ViewPose): this;
     // @internal (undocumented)
     get areAllTileTreesLoaded(): boolean;
+    // @internal
+    attachToViewport(): void;
     get auxiliaryCoordinateSystem(): AuxCoordSystemState;
     get backgroundColor(): ColorDef;
     // (undocumented)
     calculateFocusCorners(): Point3d[];
     calculateFrustum(result?: Frustum): Frustum | undefined;
-    categorySelector: CategorySelectorState;
+    get categorySelector(): CategorySelectorState;
+    set categorySelector(selector: CategorySelectorState);
     // @internal (undocumented)
     static get className(): string;
     // @internal
@@ -11477,11 +11687,14 @@ export abstract class ViewState extends ElementState {
     abstract get defaultExtentLimits(): ExtentLimits;
     // (undocumented)
     description?: string;
+    // @internal
+    detachFromViewport(): void;
     // @beta
     abstract get details(): ViewDetails;
     // @internal
     discloseTileTrees(trees: TileTreeSet): void;
-    displayStyle: DisplayStyleState;
+    get displayStyle(): DisplayStyleState;
+    set displayStyle(style: DisplayStyleState);
     // @internal (undocumented)
     drawGrid(context: DecorateContext): void;
     equals(other: this): boolean;
@@ -11529,12 +11742,14 @@ export abstract class ViewState extends ElementState {
     // @internal
     hasSameCoordinates(other: ViewState): boolean;
     is2d(): this is ViewState2d;
-    is3d(): this is ViewState3d;
+    abstract is3d(): this is ViewState3d;
+    // @alpha
+    get isAttachedToViewport(): boolean;
     isCameraEnabled(): this is ViewState3d;
-    isDrawingView(): this is DrawingViewState;
+    abstract isDrawingView(): this is DrawingViewState;
     // (undocumented)
     isPrivate?: boolean;
-    isSpatialView(): this is SpatialViewState;
+    abstract isSpatialView(): this is SpatialViewState;
     // @internal (undocumented)
     isSubCategoryVisible(id: Id64String): boolean;
     load(): Promise<void>;
@@ -11542,10 +11757,16 @@ export abstract class ViewState extends ElementState {
     lookAtVolume(volume: LowAndHighXYZ | LowAndHighXY, aspect?: number, options?: ViewChangeOptions): void;
     // @alpha
     get maxGlobalScopeFactor(): number;
-    // @internal
+    // @alpha
     get modelDisplayTransformProvider(): ModelDisplayTransformProvider | undefined;
     set modelDisplayTransformProvider(provider: ModelDisplayTransformProvider | undefined);
     get name(): string;
+    // @beta
+    readonly onDisplayStyleChanged: BeEvent<(newStyle: DisplayStyleState) => void>;
+    // @alpha
+    readonly onModelDisplayTransformProviderChanged: BeEvent<(newProvider: ModelDisplayTransformProvider | undefined) => void>;
+    // @beta
+    readonly onViewedCategoriesChanged: BeEvent<() => void>;
     // @internal (undocumented)
     outputStatusMessage(status: ViewStatus): ViewStatus;
     // @internal
@@ -11571,6 +11792,7 @@ export abstract class ViewState extends ElementState {
     setViewClip(clip?: ClipVector): void;
     // (undocumented)
     toJSON(): ViewDefinitionProps;
+    toProps(): ViewStateProps;
     // (undocumented)
     protected _updateMaxGlobalScopeFactor(): void;
     get viewFlags(): ViewFlags;
@@ -11588,7 +11810,11 @@ export abstract class ViewState2d extends ViewState {
     // @internal (undocumented)
     applyPose(val: ViewPose2d): this;
     // (undocumented)
-    readonly baseModelId: Id64String;
+    get baseModelId(): Id64String;
+    // (undocumented)
+    protected _baseModelId: Id64String;
+    // @alpha
+    changeViewedModel(newViewedModelId: Id64String): Promise<void>;
     // @internal (undocumented)
     static get className(): string;
     // (undocumented)
@@ -11610,6 +11836,10 @@ export abstract class ViewState2d extends ViewState {
     // (undocumented)
     getRotation(): Matrix3d;
     getViewedModel(): GeometricModel2dState | undefined;
+    // @internal (undocumented)
+    is3d(): this is ViewState3d;
+    // @internal (undocumented)
+    isSpatialView(): this is SpatialViewState;
     // (undocumented)
     load(): Promise<void>;
     // @deprecated
@@ -11697,9 +11927,13 @@ export abstract class ViewState3d extends ViewState {
     get globalScopeFactor(): number;
     // (undocumented)
     globalViewTransition(): number;
+    // @internal (undocumented)
+    is3d(): this is ViewState3d;
     // (undocumented)
     get isCameraOn(): boolean;
     get isCameraValid(): boolean;
+    // @internal (undocumented)
+    isDrawingView(): this is DrawingViewState;
     // (undocumented)
     isEyePointAbove(elevation: number): boolean;
     // (undocumented)
