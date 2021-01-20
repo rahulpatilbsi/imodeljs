@@ -40,7 +40,17 @@ describe("ECSql Query", () => {
     imodel5.close();
   });
 
-  // new new addon build
+  it("Geom Func", async () => {
+    let rows = await executeQuery(imodel1, "select sum(imodel_bbox_areaxy(imodel_bbox(bboxlow.x,bboxlow.y, bboxlow.z, bboxhigh.x, bboxhigh.y, bboxhigh.z))) area  FROM bis.GeometricElement3d");
+    assert.equal(rows.length, 1);
+    const area = Math.ceil(rows[0].area);
+    assert.equal(area, 1213);
+
+    rows = await executeQuery(imodel1, "SELECT count(ECInstanceId) cnt FROM bis.SpatialIndex WHERE ECInstanceId MATCH iModel_spatial_overlap_aabb(iModel_bbox(-7, -2, 8, 37, 20, 30)) ORDER BY iModel_bbox_volume(iModel_bbox(MinX,MinY,MinZ,MaxX,MaxY,MaxZ)) DESC");
+    assert.equal(rows.length, 1);
+    assert.equal(rows[0].cnt, 4);
+  });
+
   it("ECSQL with BLOB", async () => {
     let rows = await executeQuery(imodel1, "SELECT ECInstanceId,GeometryStream FROM bis.GeometricElement3d WHERE GeometryStream IS NOT NULL LIMIT 1");
     assert.equal(rows.length, 1);
