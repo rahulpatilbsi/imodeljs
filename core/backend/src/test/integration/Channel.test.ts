@@ -2,7 +2,7 @@
 * Copyright (c) Bentley Systems, Incorporated. All rights reserved.
 * See LICENSE.md in the project root for license terms and full copyright notice.
 *--------------------------------------------------------------------------------------------*/
-import { DbOpcode, Id64String } from "@bentley/bentleyjs-core";
+import { DbOpcode, GuidString, Id64String } from "@bentley/bentleyjs-core";
 import { IModel, SubCategoryAppearance } from "@bentley/imodeljs-common";
 import { TestUsers, TestUtility } from "@bentley/oidc-signin-tool";
 import * as chai from "chai";
@@ -14,8 +14,9 @@ import { InformationPartitionElement, Subject } from "../../Element";
 import { BriefcaseDb, IModelDb } from "../../IModelDb";
 import { AuthorizedBackendRequestContext, ChannelRootAspect, IModelHost } from "../../imodeljs-backend";
 import { DictionaryModel } from "../../Model";
-import { IModelTestUtils, TestIModelInfo } from "../IModelTestUtils";
+import { IModelTestUtils } from "../IModelTestUtils";
 import { HubUtility } from "./HubUtility";
+import { getTestProjectId, getTestiModelId } from "./TestIModelsUtility";
 
 const assert = chai.assert;
 chai.use(chaiAsPromised);
@@ -26,7 +27,7 @@ function createAndInsertSpatialCategory(testIModel: IModelDb, name: string): Id6
 }
 
 describe("Channel Control (#integration)", () => {
-  let readWriteTestIModel: TestIModelInfo;
+  let readWriteTestIModelId: GuidString;
   let readWriteTestIModelName: string;
   let testProjectId: string;
   let managerRequestContext: AuthorizedBackendRequestContext;
@@ -40,16 +41,15 @@ describe("Channel Control (#integration)", () => {
 
   before(async () => {
     managerRequestContext = await TestUtility.getAuthorizedClientRequestContext(TestUsers.manager);
-    testProjectId = await HubUtility.queryProjectIdByName(managerRequestContext, "iModelJsIntegrationTest");
+    testProjectId = await getTestProjectId(managerRequestContext);
     readWriteTestIModelName = HubUtility.generateUniqueName("ChannelControlIModel");
-    const existingIModel = await HubUtility.queryIModelByName(managerRequestContext, testProjectId, readWriteTestIModelName);
-    if (existingIModel !== undefined && existingIModel.id !== undefined)
-      await IModelHost.iModelClient.iModels.delete(managerRequestContext, testProjectId, existingIModel.id);
-    await IModelHost.iModelClient.iModels.create(managerRequestContext, testProjectId, readWriteTestIModelName, { description: "Channel Control Test" });
-    readWriteTestIModel = await IModelTestUtils.getTestModelInfo(managerRequestContext, testProjectId, readWriteTestIModelName);
+
+    HubUtility.recreateIModel(managerRequestContext, testProjectId, readWriteTestIModelName);
+
+    readWriteTestIModelId = await getTestiModelId(managerRequestContext, readWriteTestIModelName);
 
     // Purge briefcases that are close to reaching the acquire limit
-    await HubUtility.purgeAcquiredBriefcasesById(managerRequestContext, readWriteTestIModel.id, () => { });
+    await HubUtility.purgeAcquiredBriefcasesById(managerRequestContext, readWriteTestIModelId, () => { });
   });
 
   after(async () => {
@@ -60,7 +60,7 @@ describe("Channel Control (#integration)", () => {
   });
 
   it("should create channels (#integration)", async () => {
-    const props = await BriefcaseManager.downloadBriefcase(managerRequestContext, { contextId: testProjectId, iModelId: readWriteTestIModel.id });
+    const props = await BriefcaseManager.downloadBriefcase(managerRequestContext, { contextId: testProjectId, iModelId: readWriteTestIModelId });
     managerRequestContext.enter();
     const imodel1 = await BriefcaseDb.open(managerRequestContext, { fileName: props.fileName });
     managerRequestContext.enter();

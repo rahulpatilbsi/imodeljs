@@ -12,6 +12,33 @@ import * as os from "os";
 import * as path from "path";
 import { BriefcaseIdValue, ChangeSetToken, IModelDb, IModelHost, IModelJsFs } from "../../imodeljs-backend";
 
+export class TestIModelInfo {
+  private _name: string;
+  private _id: string;
+  private _localReadonlyPath: string;
+  private _localReadWritePath: string;
+  private _changeSets: ChangeSet[];
+
+  constructor(name: string) {
+    this._name = name;
+    this._id = "";
+    this._localReadonlyPath = "";
+    this._localReadWritePath = "";
+    this._changeSets = [];
+  }
+
+  get name(): string { return this._name; }
+  set name(name: string) { this._name = name; }
+  get id(): string { return this._id; }
+  set id(id: string) { this._id = id; }
+  get localReadonlyPath(): string { return this._localReadonlyPath; }
+  set localReadonlyPath(localReadonlyPath: string) { this._localReadonlyPath = localReadonlyPath; }
+  get localReadWritePath(): string { return this._localReadWritePath; }
+  set localReadWritePath(localReadWritePath: string) { this._localReadWritePath = localReadWritePath; }
+  get changeSets(): ChangeSet[] { return this._changeSets; }
+  set changeSets(changeSets: ChangeSet[]) { this._changeSets = changeSets; }
+}
+
 /** Utility to work with iModelHub */
 export class HubUtility {
 
@@ -87,7 +114,7 @@ export class HubUtility {
    * @param iModelName Name of the iModel
    * @throws If the iModel is not found, or if there is more than one iModel with the supplied name
    */
-  public static async queryIModelIdByName(requestContext: AuthorizedClientRequestContext, projectId: string, iModelName: string): Promise<GuidString> {
+  public static async queryIModelIdByName(requestContext: AuthorizedClientRequestContext, projectId: GuidString, iModelName: string): Promise<GuidString> {
     const iModel = await HubUtility.queryIModelByName(requestContext, projectId, iModelName);
     if (!iModel || !iModel.id)
       throw new Error(`IModel ${iModelName} not found`);
@@ -101,7 +128,7 @@ export class HubUtility {
   }
 
   /** Download all change sets of the specified iModel */
-  private static async downloadChangeSets(requestContext: AuthorizedClientRequestContext, changeSetsPath: string, _projectId: string, iModelId: GuidString): Promise<ChangeSet[]> {
+  private static async downloadChangeSets(requestContext: AuthorizedClientRequestContext, changeSetsPath: string, _projectId: GuidString, iModelId: GuidString): Promise<ChangeSet[]> {
     // Determine the range of changesets that remain to be downloaded
     const changeSets = await IModelHost.iModelClient.changeSets.get(requestContext, iModelId, new ChangeSetQuery()); // oldest to newest
     if (changeSets.length === 0)
@@ -205,6 +232,14 @@ export class HubUtility {
     const iModelId = await HubUtility.queryIModelIdByName(requestContext, projectId, iModelName);
 
     await IModelHost.iModelClient.iModels.delete(requestContext, projectId, iModelId);
+  }
+
+  public static async getTestModelInfo(requestContext: AuthorizedClientRequestContext, testProjectId: string, iModelName: string): Promise<TestIModelInfo> {
+    const iModelInfo = new TestIModelInfo(iModelName);
+    iModelInfo.id = await HubUtility.queryIModelIdByName(requestContext, testProjectId, iModelInfo.name);
+
+    iModelInfo.changeSets = await IModelHost.iModelClient.changeSets.get(requestContext, iModelInfo.id);
+    return iModelInfo;
   }
 
   /** Get the pathname of the briefcase in the supplied directory - assumes a standard layout of the supplied directory */
@@ -597,17 +632,24 @@ export class HubUtility {
     return `${baseName}_${username}_${hostname}`;
   }
 
-  /** Create  */
-  public static async recreateIModel(requestContext: AuthorizedClientRequestContext, projectId: GuidString, iModelName: string): Promise<GuidString> {
-    // Delete any existing iModel
-    try {
-      const deleteIModelId = await HubUtility.queryIModelIdByName(requestContext, projectId, iModelName);
-      await IModelHost.iModelClient.iModels.delete(requestContext, projectId, deleteIModelId);
-    } catch (err) {
-    }
+  /** Deletes and re-creates an iModel with the provided name in the Context.
+   * @returns the iModelId of the newly created iModel.
+  */
+  public static async recreateIModel(requestContext: AuthorizedClientRequestContext, contextId: GuidString, iModelName: string): Promise<GuidString> {
+    let deleteIModel = await HubUtility.queryIModelByName(requestContext, contextId, iModelName);
+    if (undefined !== deleteIModel)
+      await IModelHost.iModelClient.iModels.delete(requestContext, contextId, deleteIModel.wsgId);
 
     // Create a new iModel
-    const iModel = await IModelHost.iModelClient.iModels.create(requestContext, projectId, iModelName, { description: `Description for ${iModelName}` });
+    const iModel = await IModelHost.iModelClient.iModels.create(requestContext, contextId, iModelName, { description: `Description for ${iModelName}` });
+    return iModel.wsgId;
+  }
+
+  /** Create an iModel with the name provided if it does not already exist. If it does exist, the iModelId is returned. */
+  public static async createIModel(requestContext: AuthorizedClientRequestContext, contextId: GuidString, iModelName: string): Promise<GuidString> {
+    let iModel = await HubUtility.queryIModelByName(requestContext, contextId, iModelName);
+    if (!iModel)
+      iModel = await IModelHost.iModelClient.iModels.create(requestContext, contextId, iModelName, { description: `Description for iModel` });
     return iModel.wsgId;
   }
 }

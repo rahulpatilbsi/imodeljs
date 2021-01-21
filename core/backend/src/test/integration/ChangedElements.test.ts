@@ -2,14 +2,15 @@
 * Copyright (c) Bentley Systems, Incorporated. All rights reserved.
 * See LICENSE.md in the project root for license terms and full copyright notice.
 *--------------------------------------------------------------------------------------------*/
-import { DbResult } from "@bentley/bentleyjs-core";
+import { DbResult, GuidString } from "@bentley/bentleyjs-core";
 import { ChangedElements } from "@bentley/imodeljs-common";
 import { TestUsers, TestUtility } from "@bentley/oidc-signin-tool";
 import { assert } from "chai";
 import { ChangedElementsManager } from "../../ChangedElementsManager";
 import { AuthorizedBackendRequestContext, BriefcaseManager, ChangedElementsDb, IModelHost, IModelJsFs } from "../../imodeljs-backend";
-import { IModelTestUtils, TestIModelInfo } from "../IModelTestUtils";
+import { IModelTestUtils } from "../IModelTestUtils";
 import { HubUtility } from "./HubUtility";
+import { getTestiModelId, getTestProjectId, TestiModels } from "./TestIModelsUtility";
 
 function setupTest(iModelId: string): void {
   const cacheFilePath: string = BriefcaseManager.getChangeCachePathName(iModelId);
@@ -19,25 +20,28 @@ function setupTest(iModelId: string): void {
 
 describe("ChangedElements (#integration)", () => {
   let requestContext: AuthorizedBackendRequestContext;
-  let testProjectId: string;
-
-  let testIModel: TestIModelInfo;
+  let testContextId: GuidString;
+  let testIModelId: GuidString;
 
   before(async () => {
     requestContext = await TestUtility.getAuthorizedClientRequestContext(TestUsers.regular);
-    testProjectId = await HubUtility.queryProjectIdByName(requestContext, "iModelJsIntegrationTest");
-    testIModel = await IModelTestUtils.getTestModelInfo(requestContext, testProjectId, "ReadOnlyTest");
+
+    testContextId = await getTestProjectId(requestContext);
+    requestContext.enter();
+    testIModelId = await getTestiModelId(requestContext, TestiModels.readOnly);
+    requestContext.enter();
 
     // Purge briefcases that are close to reaching the acquire limit
     const managerRequestContext = await TestUtility.getAuthorizedClientRequestContext(TestUsers.manager);
-    await HubUtility.purgeAcquiredBriefcases(managerRequestContext, "iModelJsIntegrationTest", "ReadOnlyTest");
+    requestContext.enter();
+    await HubUtility.purgeAcquiredBriefcasesById(managerRequestContext, testIModelId, () => { });
   });
 
   it("Create ChangedElements Cache and process changesets", async () => {
-    setupTest(testIModel.id);
+    setupTest(testIModelId);
 
-    const iModel = await IModelTestUtils.downloadAndOpenCheckpoint({ requestContext, contextId: testProjectId, iModelId: testIModel.id });
-    const changeSets = await IModelHost.iModelClient.changeSets.get(requestContext, testIModel.id);
+    const iModel = await IModelTestUtils.downloadAndOpenCheckpoint({ requestContext, contextId: testContextId, iModelId: testIModelId });
+    const changeSets = await IModelHost.iModelClient.changeSets.get(requestContext, testIModelId);
     assert.exists(iModel);
 
     const filePath = ChangedElementsManager.getChangedElementsPathName(iModel.iModelId);

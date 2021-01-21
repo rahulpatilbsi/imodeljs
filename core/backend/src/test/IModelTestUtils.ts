@@ -52,33 +52,6 @@ export class Timer {
   }
 }
 
-export class TestIModelInfo {
-  private _name: string;
-  private _id: string;
-  private _localReadonlyPath: string;
-  private _localReadWritePath: string;
-  private _changeSets: ChangeSet[];
-
-  constructor(name: string) {
-    this._name = name;
-    this._id = "";
-    this._localReadonlyPath = "";
-    this._localReadWritePath = "";
-    this._changeSets = [];
-  }
-
-  get name(): string { return this._name; }
-  set name(name: string) { this._name = name; }
-  get id(): string { return this._id; }
-  set id(id: string) { this._id = id; }
-  get localReadonlyPath(): string { return this._localReadonlyPath; }
-  set localReadonlyPath(localReadonlyPath: string) { this._localReadonlyPath = localReadonlyPath; }
-  get localReadWritePath(): string { return this._localReadWritePath; }
-  set localReadWritePath(localReadWritePath: string) { this._localReadWritePath = localReadWritePath; }
-  get changeSets(): ChangeSet[] { return this._changeSets; }
-  set changeSets(changeSets: ChangeSet[]) { this._changeSets = changeSets; }
-}
-
 RpcConfiguration.developmentMode = true;
 
 // Initialize the RPC interface classes used by tests
@@ -188,6 +161,7 @@ export class IModelTestUtils {
   }
 
   public static async openCheckpointUsingRpc(args: RequestNewBriefcaseProps & { requestContext: AuthorizedClientRequestContext, deleteFirst?: boolean }): Promise<SnapshotDb> {
+    args.requestContext.enter();
     if (undefined === args.asOf)
       args.asOf = IModelVersion.latest().toJSON();
 
@@ -201,6 +175,7 @@ export class IModelTestUtils {
       syncMode: SyncMode.FixedVersion,
       forceDownload: args.deleteFirst,
     };
+    args.requestContext.enter();
 
     while (true) {
       try {
@@ -213,11 +188,14 @@ export class IModelTestUtils {
   }
 
   public static async closeAndDeleteBriefcaseDb(requestContext: AuthorizedClientRequestContext, briefcaseDb: IModelDb) {
+    requestContext.enter();
+
     const fileName = briefcaseDb.pathName;
     const iModelId = briefcaseDb.iModelId;
     briefcaseDb.close();
 
     await BriefcaseManager.deleteBriefcaseFiles(fileName, requestContext);
+    requestContext.enter();
 
     // try to clean up empty briefcase directories, and empty iModel directories.
     if (0 === BriefcaseManager.getCachedBriefcases(iModelId).length) {
@@ -227,14 +205,6 @@ export class IModelTestUtils {
         IModelJsFs.removeSync(imodelPath);
       }
     }
-  }
-
-  public static async getTestModelInfo(requestContext: AuthorizedClientRequestContext, testProjectId: string, iModelName: string): Promise<TestIModelInfo> {
-    const iModelInfo = new TestIModelInfo(iModelName);
-    iModelInfo.id = await HubUtility.queryIModelIdByName(requestContext, testProjectId, iModelInfo.name);
-
-    iModelInfo.changeSets = await IModelHost.iModelClient.changeSets.get(requestContext, iModelInfo.id);
-    return iModelInfo;
   }
 
   /** Prepare for an output file by:
@@ -356,10 +326,10 @@ export class IModelTestUtils {
     return [eid, mid];
   }
 
-  //
-  // Create and insert a PhysicalPartition element (in the repositoryModel) and an associated PhysicalModel.
-  // @return [modeledElementId, modelId]
-  //
+  /**
+   * Create and insert a PhysicalPartition element (in the repositoryModel) and an associated PhysicalModel.
+   * @return [modeledElementId, modelId]
+   */
   public static async createAndInsertPhysicalPartitionAndModelAsync(reqContext: AuthorizedClientRequestContext, testImodel: IModelDb, newModelCode: CodeProps, privateModel: boolean = false, parentId?: Id64String): Promise<Id64String[]> {
     const eid = await IModelTestUtils.createAndInsertPhysicalPartitionAsync(reqContext, testImodel, newModelCode, parentId);
     reqContext.enter();
@@ -369,7 +339,7 @@ export class IModelTestUtils {
     return [eid, mid];
   }
 
-  // Create and insert a Drawing Partition element (in the repositoryModel).
+  /** Create and insert a Drawing Partition element (in the repositoryModel). */
   public static createAndInsertDrawingPartition(testDb: IModelDb, newModelCode: CodeProps, parentId?: Id64String): Id64String {
     const model = parentId ? testDb.elements.getElement(parentId).model : IModel.repositoryModelId;
     const parent = new SubjectOwnsPartitionElements(parentId || IModel.rootSubjectId);
@@ -384,7 +354,7 @@ export class IModelTestUtils {
     return testDb.elements.insertElement(modeledElement);
   }
 
-  // Create and insert a DrawingModel associated with Drawing Partition.
+  /** Create and insert a DrawingModel associated with Drawing Partition. */
   public static createAndInsertDrawingModel(testDb: IModelDb, modeledElementRef: RelatedElement, privateModel: boolean = false): Id64String {
     const newModel = testDb.models.createModel({ modeledElement: modeledElementRef, classFullName: DrawingModel.classFullName, isPrivate: privateModel });
     const newModelId = testDb.models.insertModel(newModel);
@@ -394,10 +364,10 @@ export class IModelTestUtils {
     return newModelId;
   }
 
-  //
-  // Create and insert a Drawing Partition element (in the repositoryModel) and an associated DrawingModel.
-  // @return [modeledElementId, modelId]
-  //
+  /**
+   * Create and insert a Drawing Partition element (in the repositoryModel) and an associated DrawingModel.
+   * @return [modeledElementId, modelId]
+   */
   public static createAndInsertDrawingPartitionAndModel(testImodel: IModelDb, newModelCode: CodeProps, privateModel: boolean = false, parent?: Id64String): Id64String[] {
     const eid = IModelTestUtils.createAndInsertDrawingPartition(testImodel, newModelCode, parent);
     const modeledElementRef = new RelatedElement({ id: eid });

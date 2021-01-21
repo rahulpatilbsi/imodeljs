@@ -11,33 +11,24 @@ import { SnapshotDb } from "../../IModelDb";
 import { AuthorizedBackendRequestContext, BriefcaseManager, IModelHost } from "../../imodeljs-backend";
 import { IModelTestUtils } from "../IModelTestUtils";
 import { HubUtility } from "./HubUtility";
+import { getTestProjectId, getTestiModelId, TestiModels } from "./TestIModelsUtility";
 
 describe("IModelOpen (#integration)", () => {
 
   let requestContext: AuthorizedBackendRequestContext;
-  let badRequestContext: AuthorizedBackendRequestContext;
-  const testProjectName = "iModelJsIntegrationTest";
-  const testIModelName = "Stadium Dataset 1";
   let testIModelId: GuidString;
   let testProjectId: GuidString;
   let testChangeSetId: GuidString;
 
   before(async () => {
     IModelTestUtils.setupLogging();
-    // IModelTestUtils.setupDebugLogLevels();
 
     requestContext = await TestUtility.getAuthorizedClientRequestContext(TestUsers.regular);
-    testProjectId = await HubUtility.queryProjectIdByName(requestContext, testProjectName);
-    testIModelId = await HubUtility.queryIModelIdByName(requestContext, testProjectId, testIModelName);
+    testProjectId = await getTestProjectId(requestContext);
+    requestContext.enter();
+
+    testIModelId = await getTestiModelId(requestContext, TestiModels.stadium);
     testChangeSetId = (await HubUtility.queryLatestChangeSet(requestContext, testIModelId))!.wsgId;
-
-    // Open and close the iModel to ensure it works and is closed
-    const iModel = await IModelTestUtils.downloadAndOpenCheckpoint({ requestContext, contextId: testProjectId, iModelId: testIModelId, asOf: IModelVersion.asOfChangeSet(testChangeSetId).toJSON() });
-    assert.isDefined(iModel);
-    await IModelTestUtils.closeAndDeleteBriefcaseDb(requestContext, iModel);
-
-    const badToken = new AccessToken("ThisIsABadToken");
-    badRequestContext = new AuthorizedBackendRequestContext(badToken);
   });
 
   const deleteTestIModelCache = () => {
@@ -45,7 +36,17 @@ describe("IModelOpen (#integration)", () => {
     (BriefcaseManager as any).deleteFolderAndContents(path);
   };
 
+  it("", async () => {
+    // Open and close the iModel to ensure it works and is closed
+    const iModel = await IModelTestUtils.downloadAndOpenCheckpoint({ requestContext, contextId: testProjectId, iModelId: testIModelId, asOf: IModelVersion.asOfChangeSet(testChangeSetId).toJSON() });
+    assert.isDefined(iModel);
+    await IModelTestUtils.closeAndDeleteBriefcaseDb(requestContext, iModel);
+  });
+
   it("Unauthorized requests should cause an obvious error", async () => {
+    const badToken = new AccessToken("ThisIsABadToken");
+    const badRequestContext = new AuthorizedBackendRequestContext(badToken);
+
     // Try the bad request context
     let error: any;
     try {
