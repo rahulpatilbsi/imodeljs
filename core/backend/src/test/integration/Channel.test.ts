@@ -16,7 +16,6 @@ import { AuthorizedBackendRequestContext, ChannelRootAspect, IModelHost } from "
 import { DictionaryModel } from "../../Model";
 import { IModelTestUtils } from "../IModelTestUtils";
 import { HubUtility } from "./HubUtility";
-import { getTestContextId, getTestIModelId } from "./TestIModelsUtility";
 
 const assert = chai.assert;
 chai.use(chaiAsPromised);
@@ -28,7 +27,6 @@ function createAndInsertSpatialCategory(testIModel: IModelDb, name: string): Id6
 
 describe("Channel Control (#integration)", () => {
   let readWriteTestIModelId: GuidString;
-  let readWriteTestIModelName: string;
   let testProjectId: string;
   let managerRequestContext: AuthorizedBackendRequestContext;
   let m2: Id64String;
@@ -41,15 +39,13 @@ describe("Channel Control (#integration)", () => {
 
   before(async () => {
     managerRequestContext = await TestUtility.getAuthorizedClientRequestContext(TestUsers.manager);
-    testProjectId = await getTestContextId(managerRequestContext);
-    readWriteTestIModelName = HubUtility.generateUniqueName("ChannelControlIModel");
-
-    readWriteTestIModelId = await HubUtility.recreateIModel(managerRequestContext, testProjectId, readWriteTestIModelName);
+    testProjectId = await HubUtility.getTestContextId(managerRequestContext);
+    readWriteTestIModelId = await HubUtility.recreateIModel(managerRequestContext, testProjectId, HubUtility.generateUniqueName("ChannelControlIModel"));
   });
 
   after(async () => {
     try {
-      await HubUtility.deleteIModel(managerRequestContext, "iModelJsIntegrationTest", readWriteTestIModelName);
+      await IModelHost.iModelClient.iModels.delete(managerRequestContext, testProjectId, readWriteTestIModelId);
     } catch (err) {
     }
   });

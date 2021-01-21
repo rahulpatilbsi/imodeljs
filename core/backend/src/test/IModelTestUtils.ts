@@ -500,3 +500,8 @@ before(async () => {
   IModelTestUtils.setupLogging();
   await IModelTestUtils.startBackend();
 });
+
+after(async () => {
+  console.log("Shutting down IModelHost");
+  await IModelTestUtils.shutdownBackend();
+})

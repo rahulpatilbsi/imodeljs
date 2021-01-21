@@ -3,14 +3,13 @@
 * See LICENSE.md in the project root for license terms and full copyright notice.
 *--------------------------------------------------------------------------------------------*/
 import { DbResult, GuidString } from "@bentley/bentleyjs-core";
-import { ChangedElements } from "@bentley/imodeljs-common";
+import { IModelError } from "@bentley/imodeljs-common";
 import { TestUsers, TestUtility } from "@bentley/oidc-signin-tool";
 import { assert } from "chai";
 import { ChangedElementsManager } from "../../ChangedElementsManager";
 import { AuthorizedBackendRequestContext, BriefcaseManager, ChangedElementsDb, IModelHost, IModelJsFs } from "../../imodeljs-backend";
 import { IModelTestUtils } from "../IModelTestUtils";
 import { HubUtility } from "./HubUtility";
-import { getTestIModelId, getTestContextId, TestIModels } from "./TestIModelsUtility";
 
 function setupTest(iModelId: string): void {
   const cacheFilePath: string = BriefcaseManager.getChangeCachePathName(iModelId);
@@ -26,15 +25,14 @@ describe("ChangedElements (#integration)", () => {
   before(async () => {
     requestContext = await TestUtility.getAuthorizedClientRequestContext(TestUsers.regular);
 
-    testContextId = await getTestContextId(requestContext);
+    testContextId = await HubUtility.getTestContextId(requestContext);
     requestContext.enter();
-    testIModelId = await getTestIModelId(requestContext, TestIModels.readOnly);
+    testIModelId = await HubUtility.getTestIModelId(requestContext, HubUtility.TestIModelNames.readOnly);
     requestContext.enter();
 
     // Purge briefcases that are close to reaching the acquire limit
-    const managerRequestContext = await TestUtility.getAuthorizedClientRequestContext(TestUsers.manager);
+    await HubUtility.purgeAcquiredBriefcasesById(requestContext, testIModelId);
     requestContext.enter();
-    await HubUtility.purgeAcquiredBriefcasesById(managerRequestContext, testIModelId, () => { });
   });
 
   it("Create ChangedElements Cache and process changesets", async () => {
@@ -49,20 +47,16 @@ describe("ChangedElements (#integration)", () => {
       IModelJsFs.removeSync(filePath);
 
     let cache: ChangedElementsDb | undefined = ChangedElementsDb.createDb(iModel, filePath);
+    assert.isDefined(cache);
     const startChangesetId = changeSets[0].id!;
     const endChangesetId = changeSets[changeSets.length - 1].id!;
     // Check that the changesets have not been processed yet
     assert.isFalse(cache.isProcessed(startChangesetId));
     assert.isFalse(cache.isProcessed(endChangesetId));
+
     // Try getting changed elements, should fail because we haven't processed the changesets
-    let changes: ChangedElements | undefined;
-    try {
-      changes = cache.getChangedElements(startChangesetId, endChangesetId);
-      assert.isTrue(false);
-    } catch {
-      // Expected to fail
-    }
-    assert.isTrue(changes === undefined);
+    assert.throws(() => cache!.getChangedElements(startChangesetId, endChangesetId), IModelError);
+
     // Process changesets with "Items" presentation rules
     const result = await cache.processChangesets(requestContext, iModel, "Items", startChangesetId, endChangesetId);
     assert.equal(result, DbResult.BE_SQLITE_OK);
@@ -70,7 +64,7 @@ describe("ChangedElements (#integration)", () => {
     assert.isTrue(cache.isProcessed(startChangesetId));
     assert.isTrue(cache.isProcessed(endChangesetId));
     // Try getting changed elements, it should work this time
-    changes = cache.getChangedElements(startChangesetId, endChangesetId);
+    let changes = cache.getChangedElements(startChangesetId, endChangesetId);
     assert.isTrue(changes !== undefined);
     assert.isTrue(changes!.elements.length !== 0);
     assert.isTrue(changes!.modelIds !== undefined);

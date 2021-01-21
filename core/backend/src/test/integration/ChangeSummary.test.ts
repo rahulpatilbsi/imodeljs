@@ -17,7 +17,6 @@ import { IModelTestUtils } from "../IModelTestUtils";
 import { KnownTestLocations } from "../KnownTestLocations";
 import { HubUtility } from "./HubUtility";
 import { TestChangeSetUtility } from "./TestChangeSetUtility";
-import { getTestContextId, getTestIModelId, TestIModels } from "./TestIModelsUtility";
 
 function setupTest(iModelId: string): void {
   const cacheFilePath: string = BriefcaseManager.getChangeCachePathName(iModelId);
@@ -75,30 +74,29 @@ describe("ChangeSummary (#integration)", () => {
   let readWriteTestIModelId: GuidString;
 
   before(async () => {
-    IModelTestUtils.setupLogging();
     Logger.setLevel("DgnCore", LogLevel.Error);
     Logger.setLevel("BeSQLite", LogLevel.Error);
 
     requestContext = await TestUtility.getAuthorizedClientRequestContext(TestUsers.regular);
 
-    testContextId = await getTestContextId(requestContext);
+    testContextId = await HubUtility.getTestContextId(requestContext);
     requestContext.enter();
-    readOnlyTestIModelId = await getTestIModelId(requestContext, TestIModels.readOnly);
+    readOnlyTestIModelId = await HubUtility.getTestIModelId(requestContext, HubUtility.TestIModelNames.readOnly);
     requestContext.enter();
-    readWriteTestIModelId = await getTestIModelId(requestContext, TestIModels.readWrite);
+    readWriteTestIModelId = await HubUtility.getTestIModelId(requestContext, HubUtility.TestIModelNames.readWrite);
     requestContext.enter();
 
-    await HubUtility.purgeAcquiredBriefcasesById(requestContext, readOnlyTestIModelId, () => { });
+    await HubUtility.purgeAcquiredBriefcasesById(requestContext, readOnlyTestIModelId);
     requestContext.enter();
-    await HubUtility.purgeAcquiredBriefcasesById(requestContext, readWriteTestIModelId, () => { });
+    await HubUtility.purgeAcquiredBriefcasesById(requestContext, readWriteTestIModelId);
     requestContext.enter();
 
     // Purge briefcases that are close to reaching the acquire limit
     const managerRequestContext = await TestUtility.getAuthorizedClientRequestContext(TestUsers.manager);
     managerRequestContext.enter();
-    await HubUtility.purgeAcquiredBriefcasesById(managerRequestContext, readOnlyTestIModelId, () => { });
+    await HubUtility.purgeAcquiredBriefcasesById(managerRequestContext, readOnlyTestIModelId);
     managerRequestContext.enter();
-    await HubUtility.purgeAcquiredBriefcasesById(managerRequestContext, readWriteTestIModelId, () => { });
+    await HubUtility.purgeAcquiredBriefcasesById(managerRequestContext, readWriteTestIModelId);
     managerRequestContext.enter();
   });
 
@@ -389,7 +387,7 @@ describe("ChangeSummary (#integration)", () => {
 
     // Recreate iModel
     const managerRequestContext = await TestUtility.getAuthorizedClientRequestContext(TestUsers.manager);
-    const projectId = await HubUtility.queryProjectIdByName(managerRequestContext, "iModelJsIntegrationTest");
+    const projectId = await HubUtility.getTestContextId(managerRequestContext);
     const iModelId = await HubUtility.recreateIModel(managerRequestContext, projectId, iModelName);
 
     // Cleanup local cache
@@ -465,7 +463,7 @@ describe("ChangeSummary (#integration)", () => {
     await IModelHost.iModelClient.iModels.delete(requestContext, projectId, iModelId);
   });
 
-  it("should be able to extract the last change summary right after applying a change set", async () => {
+  it.skip("should be able to extract the last change summary right after applying a change set", async () => {
     const userContext1 = await TestUtility.getAuthorizedClientRequestContext(TestUsers.manager);
     const userContext2 = await TestUtility.getAuthorizedClientRequestContext(TestUsers.superManager);
 

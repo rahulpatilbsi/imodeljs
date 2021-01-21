@@ -9,7 +9,6 @@ import { assert } from "chai";
 import { AuthorizedBackendRequestContext } from "../../imodeljs-backend";
 import { IModelTestUtils } from "../IModelTestUtils";
 import { HubUtility } from "./HubUtility";
-import { getTestContextId, getTestIModelId, TestIModels } from "./TestIModelsUtility";
 
 // iOS and other mobile platform do not support Agent workflow.
 if (!MobileRpcConfiguration.isMobileBackend) {
@@ -20,7 +19,6 @@ if (!MobileRpcConfiguration.isMobileBackend) {
     let requestContext: AuthorizedBackendRequestContext;
 
     before(async () => {
-      IModelTestUtils.setupLogging();
       // IModelTestUtils.setupDebugLogLevels();
 
       const agentConfiguration: AgentAuthorizationClientConfiguration = {
@@ -34,13 +32,13 @@ if (!MobileRpcConfiguration.isMobileBackend) {
       requestContext = new AuthorizedBackendRequestContext(jwt);
       requestContext.enter();
 
-      testProjectId = await getTestContextId(requestContext);
+      testProjectId = await HubUtility.getTestContextId(requestContext);
       requestContext.enter();
 
-      testReadIModelId = await getTestIModelId(requestContext, TestIModels.readOnly);
+      testReadIModelId = await HubUtility.getTestIModelId(requestContext, HubUtility.TestIModelNames.readOnly);
       requestContext.enter();
 
-      testWriteIModelId = await getTestIModelId(requestContext, TestIModels.readWrite);
+      testWriteIModelId = await HubUtility.getTestIModelId(requestContext, HubUtility.TestIModelNames.readWrite);
       requestContext.enter();
     });
 
@@ -48,9 +46,9 @@ if (!MobileRpcConfiguration.isMobileBackend) {
       requestContext.enter();
 
       // Purge briefcases that are close to reaching the acquire limit
-      await HubUtility.purgeAcquiredBriefcasesById(requestContext, testReadIModelId, () => { });
+      await HubUtility.purgeAcquiredBriefcasesById(requestContext, testReadIModelId);
       requestContext.enter();
-      await HubUtility.purgeAcquiredBriefcasesById(requestContext, testWriteIModelId, () => { });
+      await HubUtility.purgeAcquiredBriefcasesById(requestContext, testWriteIModelId);
       requestContext.enter();
     });
 

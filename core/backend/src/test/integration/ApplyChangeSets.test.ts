@@ -7,15 +7,12 @@ import { AuthorizedClientRequestContext } from "@bentley/itwin-client";
 import { TestUsers, TestUtility } from "@bentley/oidc-signin-tool";
 import { assert } from "chai";
 import * as path from "path";
-import { KnownLocations, NativeLoggerCategory } from "../../imodeljs-backend";
+import { IModelHost, KnownLocations, NativeLoggerCategory } from "../../imodeljs-backend";
 import { IModelTestUtils } from "../IModelTestUtils";
 import { HubUtility } from "./HubUtility";
-import { getTestContextId, getTestIModelId, TestIModels } from "./TestIModelsUtility";
 
 // Useful utilities to download/upload test cases from/to iModelHub
 describe("ApplyChangeSets (#integration)", () => {
-  const iModelRootDir = path.join(KnownLocations.tmpdir, "IModelJsTest/");
-
   before(async () => {
     // Note: Change to LogLevel.Info for useful debug information
     Logger.setLevel(HubUtility.logCategory, LogLevel.Error);
@@ -25,7 +22,7 @@ describe("ApplyChangeSets (#integration)", () => {
 
   const testAllChangeSetOperations = async (requestContext: AuthorizedClientRequestContext, projectId: string, iModelId: GuidString) => {
     requestContext.enter();
-    const iModelDir = path.join(iModelRootDir, iModelId.toString());
+    const iModelDir = path.join(IModelHost.cacheDir, iModelId.toString());
     return HubUtility.validateAllChangeSetOperations(requestContext, projectId, iModelId, iModelDir);
   };
 
@@ -45,21 +42,19 @@ describe("ApplyChangeSets (#integration)", () => {
   };
 
   it("should test all change set operations after downloading iModel from the hub (#integration)", async () => {
-    console.log(`Downloading/Uploading iModels to/from ${iModelRootDir}`); // eslint-disable-line no-console
-
     const requestContext = await TestUtility.getAuthorizedClientRequestContext(TestUsers.regular);
 
-    let projectId = await getTestContextId(requestContext);
-    let iModelId = await getTestIModelId(requestContext, TestIModels.readOnly);
+    let projectId = await HubUtility.getTestContextId(requestContext);
+    let iModelId = await HubUtility.getTestIModelId(requestContext, HubUtility.TestIModelNames.readOnly);
     await testAllOperations(requestContext, projectId, iModelId);
     requestContext.enter();
 
-    iModelId = await getTestIModelId(requestContext, TestIModels.readWrite);
+    iModelId = await HubUtility.getTestIModelId(requestContext, HubUtility.TestIModelNames.readWrite);
     requestContext.enter();
     await testAllOperations(requestContext, projectId, iModelId);
     requestContext.enter();
 
-    iModelId = await getTestIModelId(requestContext, TestIModels.noVersions);
+    iModelId = await HubUtility.getTestIModelId(requestContext, HubUtility.TestIModelNames.noVersions);
     requestContext.enter();
     await testAllOperations(requestContext, projectId, iModelId);
   });

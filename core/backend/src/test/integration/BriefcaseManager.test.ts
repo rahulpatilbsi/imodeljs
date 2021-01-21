@@ -3,7 +3,7 @@
 * See LICENSE.md in the project root for license terms and full copyright notice.
 *--------------------------------------------------------------------------------------------*/
 
-import { assert } from "chai";
+import { assert, expect } from "chai";
 import * as os from "os";
 import * as path from "path";
 import * as readline from "readline";
@@ -19,7 +19,6 @@ import {
 import { IModelTestUtils, } from "../IModelTestUtils";
 import { HubUtility } from "./HubUtility";
 import { TestChangeSetUtility } from "./TestChangeSetUtility";
-import { getTestIModelId, getTestContextId, TestIModels } from "./TestIModelsUtility";
 
 describe("BriefcaseManager (#integration)", () => {
   let testContextId: string;
@@ -41,38 +40,37 @@ describe("BriefcaseManager (#integration)", () => {
   };
 
   before(async () => {
-    IModelTestUtils.setupLogging();
     // IModelTestUtils.setupDebugLogLevels();
 
     requestContext = await TestUtility.getAuthorizedClientRequestContext(TestUsers.regular);
     requestContext.enter();
 
-    testContextId = await getTestContextId(requestContext);
+    testContextId = await HubUtility.getTestContextId(requestContext);
     requestContext.enter();
-    readOnlyTestIModelId = await getTestIModelId(requestContext, TestIModels.readOnly);
+    readOnlyTestIModelId = await HubUtility.getTestIModelId(requestContext, HubUtility.TestIModelNames.readOnly);
     requestContext.enter();
 
-    readWriteTestIModelId = await getTestIModelId(requestContext, TestIModels.noVersions);
+    readWriteTestIModelId = await HubUtility.getTestIModelId(requestContext, HubUtility.TestIModelNames.noVersions);
     requestContext.enter();
-    noVersionsTestIModelId = await getTestIModelId(requestContext, TestIModels.readWrite);
+    noVersionsTestIModelId = await HubUtility.getTestIModelId(requestContext, HubUtility.TestIModelNames.readWrite);
     requestContext.enter();
 
     // Purge briefcases that are close to reaching the acquire limit
-    await HubUtility.purgeAcquiredBriefcasesById(requestContext, readOnlyTestIModelId, () => { });
+    await HubUtility.purgeAcquiredBriefcasesById(requestContext, readOnlyTestIModelId);
     requestContext.enter();
-    await HubUtility.purgeAcquiredBriefcasesById(requestContext, noVersionsTestIModelId, () => { });
+    await HubUtility.purgeAcquiredBriefcasesById(requestContext, noVersionsTestIModelId);
     requestContext.enter();
-    await HubUtility.purgeAcquiredBriefcasesById(requestContext, readWriteTestIModelId, () => { });
+    await HubUtility.purgeAcquiredBriefcasesById(requestContext, readWriteTestIModelId);
     requestContext.enter();
-    await HubUtility.purgeAcquiredBriefcasesById(requestContext, await getTestIModelId(requestContext, TestIModels.stadium), () => { });
+    await HubUtility.purgeAcquiredBriefcasesById(requestContext, await HubUtility.getTestIModelId(requestContext, HubUtility.TestIModelNames.stadium));
     requestContext.enter();
 
     managerRequestContext = await TestUtility.getAuthorizedClientRequestContext(TestUsers.manager);
-    await HubUtility.purgeAcquiredBriefcasesById(managerRequestContext, readOnlyTestIModelId, () => { });
+    await HubUtility.purgeAcquiredBriefcasesById(managerRequestContext, readOnlyTestIModelId);
     requestContext.enter();
-    await HubUtility.purgeAcquiredBriefcasesById(managerRequestContext, noVersionsTestIModelId, () => { });
+    await HubUtility.purgeAcquiredBriefcasesById(managerRequestContext, noVersionsTestIModelId);
     requestContext.enter();
-    await HubUtility.purgeAcquiredBriefcasesById(managerRequestContext, readWriteTestIModelId, () => { });
+    await HubUtility.purgeAcquiredBriefcasesById(managerRequestContext, readWriteTestIModelId);
     managerRequestContext.enter();
   });
 
@@ -510,21 +508,10 @@ describe("BriefcaseManager (#integration)", () => {
 
     const rootEl: Element = iModelPullOnly.elements.getRootSubject();
     rootEl.userLabel = `${rootEl.userLabel}changed`;
-    let errorThrown1 = false;
-    try {
-      await iModelPullOnly.concurrencyControl.requestResourcesForUpdate(userContext2, [rootEl]);
-    } catch (err) {
-      errorThrown1 = err instanceof IModelError && err.errorNumber === IModelStatus.NotOpenForWrite;
-    }
-    assert.isTrue(errorThrown1);
+    await expect(iModelPullOnly.concurrencyControl.requestResourcesForUpdate(userContext2, [rootEl]))
+      .to.be.rejectedWith(IModelError).to.eventually.have.property("errorNumber", IModelStatus.NotOpenForWrite);
 
-    let errorThrown2 = false;
-    try {
-      iModelPullOnly.elements.updateElement(rootEl);
-    } catch (err) {
-      errorThrown2 = true;
-    }
-    assert.isTrue(errorThrown2);
+    assert.throws(() => iModelPullOnly.elements.updateElement(rootEl), IModelError);
 
     iModelPullOnly.close();
 
@@ -538,15 +525,6 @@ describe("BriefcaseManager (#integration)", () => {
 
     // User1 pushes a change set
     await testUtility.pushTestChangeSet();
-
-    // User2 should not be able to re-open the iModel since it's still open
-    try {
-      await IModelTestUtils.openBriefcaseUsingRpc(args);
-    } catch (error) {
-      assert.isTrue(error instanceof IModelError && error.errorNumber === IModelStatus.AlreadyOpen);
-      errorThrown2 = true;
-    }
-    assert.isTrue(errorThrown2);
 
     // User2 closes and reopens the iModel pullOnly as of the newer version
     // - the briefcase will be upgraded to the newer version since it was closed and re-opened.
@@ -568,13 +546,7 @@ describe("BriefcaseManager (#integration)", () => {
     assert.notStrictEqual(changeSetIdPullAndPush4, changeSetIdPullAndPush3);
 
     // User2 should NOT be able to push the changes
-    let errorThrown = false;
-    try {
-      await iModelPullOnly.pushChanges(userContext2, "test change");
-    } catch (err) {
-      errorThrown = true;
-    }
-    assert.isTrue(errorThrown);
+    await expect(iModelPullOnly.pushChanges(userContext2, "test change")).to.be.rejectedWith(IModelError);
 
     // Delete iModel from the Hub and disk
     await IModelTestUtils.closeAndDeleteBriefcaseDb(userContext2, iModelPullOnly);
@@ -622,16 +594,6 @@ describe("BriefcaseManager (#integration)", () => {
     // User1 pushes a change set
     await testUtility.pushTestChangeSet();
 
-    // User2 should not be able to re-open the iModel since it's still open
-    let errorThrown2 = false;
-    try {
-      await IModelTestUtils.openBriefcaseUsingRpc(args);
-    } catch (error) {
-      assert.isTrue(error instanceof IModelError && error.errorNumber === IModelStatus.AlreadyOpen);
-      errorThrown2 = true;
-    }
-    assert.isTrue(errorThrown2);
-
     // User2 closes and reopens the iModel pullAndPush as of the newer version
     // - the changes will still be there, AND
     // - the briefcase will be upgraded to the newer version since it was closed and re-opened.
@@ -655,7 +617,7 @@ describe("BriefcaseManager (#integration)", () => {
   });
 
   it("should be able to show progress when downloading a briefcase (#integration)", async () => {
-    const testIModelId = await getTestIModelId(requestContext, TestIModels.stadium);
+    const testIModelId = await HubUtility.getTestIModelId(requestContext, HubUtility.TestIModelNames.stadium);
     requestContext.enter();
 
     let numProgressCalls: number = 0;
@@ -663,7 +625,7 @@ describe("BriefcaseManager (#integration)", () => {
     readline.clearLine(process.stdout, 0);
     readline.moveCursor(process.stdout, -20, 0);
     const downloadProgress = (loaded: number, total: number) => {
-      const message = `${TestIModels.stadium} Download Progress ... ${(loaded * 100 / total).toFixed(2)}%`;
+      const message = `${HubUtility.TestIModelNames.stadium} Download Progress ... ${(loaded * 100 / total).toFixed(2)}%`;
       process.stdout.write(message);
       readline.moveCursor(process.stdout, -1 * message.length, 0);
       if (loaded >= total) {
@@ -693,7 +655,7 @@ describe("BriefcaseManager (#integration)", () => {
   });
 
   it("Should be able to cancel an in progress download (#integration)", async () => {
-    const testIModelId = await getTestIModelId(requestContext, TestIModels.stadium);
+    const testIModelId = await HubUtility.getTestIModelId(requestContext, HubUtility.TestIModelNames.stadium);
     requestContext.enter();
 
     let aborted = 0;
@@ -715,18 +677,46 @@ describe("BriefcaseManager (#integration)", () => {
       requestContext.enter();
     }, 1000);
 
-    let cancelled2: boolean = false;
-    try {
-      await downloadPromise;
-      requestContext.enter();
-    } catch (err) {
-      requestContext.enter();
-      assert.equal(err.errorNumber, BriefcaseStatus.DownloadCancelled);
-      assert.isTrue(err instanceof UserCancelledError);
-      cancelled2 = true;
-    }
-
-    assert.isTrue(cancelled2);
+    await expect(downloadPromise).to.be.rejectedWith(UserCancelledError).to.eventually.have.property("errorNumber", BriefcaseStatus.DownloadCancelled);
+    requestContext.enter();
   });
+
+  // it.skip("testing", async () => {
+  //   Config.App.set("imjs_buddi_resolve_url_using_region", "103");
+  //   let ctx: AuthorizedBackendRequestContext = await TestUtility.getAuthorizedClientRequestContext({});
+
+  //   // let testIModelName = "seedFileTest";
+  //   // let contextId = "71551fa5-abf4-424a-9a88-c745232d2ac3";
+  //   // let testIModelId = await HubUtility.queryIModelIdByName(ctx, "71551fa5-abf4-424a-9a88-c745232d2ac3", testIModelName);
+  //   // ctx.enter();
+  //   // let changesetId = (await BriefcaseManager.evaluateVersion(ctx, IModelVersion.asOfChangeSet("77721a87e0e40820abd94398c913736e0dcc93ff"), testIModelId)).changeSetId
+  //   // let db = await IModelTestUtils.openCheckpointUsingRpc({ requestContext: ctx, contextId, iModelId: testIModelId, asOf: IModelVersion.asOfChangeSet("77721a87e0e40820abd94398c913736e0dcc93ff").toJSON() });
+
+  //   // assert.equal(db.getGuid(), testIModelId);
+  //   // assert.equal(db.nativeDb.getParentChangeSetId(), changesetId);
+
+  //   let testIModelName = "seedFileTest";
+  //   let contextId = await HubUtility.queryProjectIdByName(ctx, "general-purpose-test");
+  //   let testIModelId = await HubUtility.queryIModelIdByName(ctx, contextId, testIModelName);
+  //   ctx.enter();
+  //   let changesetId = (await BriefcaseManager.evaluateVersion(ctx, IModelVersion.asOfChangeSet("77721a87e0e40820abd94398c913736e0dcc93ff"), testIModelId)).changeSetId
+  //   let db = await IModelTestUtils.openCheckpointUsingRpc({ requestContext: ctx, contextId, iModelId: testIModelId, asOf: IModelVersion.asOfChangeSet("77721a87e0e40820abd94398c913736e0dcc93ff").toJSON() });
+
+  //   assert.equal(db.getGuid(), testIModelId);
+  //   assert.equal(db.nativeDb.getParentChangeSetId(), changesetId);
+
+  //   Config.App.set("imjs_buddi_resolve_url_using_region", "102");
+  //   ctx = await TestUtility.getAuthorizedClientRequestContext({});
+
+  //   // testIModelName = "seedFileTest";
+  //   // contextId = "71551fa5-abf4-424a-9a88-c745232d2ac3";
+  //   // testIModelId = await HubUtility.queryIModelIdByName(ctx, "71551fa5-abf4-424a-9a88-c745232d2ac3", testIModelName);
+  //   // ctx.enter();
+  //   // changesetId = (await BriefcaseManager.evaluateVersion(ctx, IModelVersion.asOfChangeSet("77721a87e0e40820abd94398c913736e0dcc93ff"), testIModelId)).changeSetId
+  //   // db = await IModelTestUtils.openCheckpointUsingRpc({ requestContext: ctx, contextId, iModelId: testIModelId, asOf: IModelVersion.asOfChangeSet("77721a87e0e40820abd94398c913736e0dcc93ff").toJSON() });
+
+  //   // assert.equal(db.getGuid(), testIModelId);
+  //   // assert.equal(db.nativeDb.getParentChangeSetId(), changesetId);
+  // });
 
 });

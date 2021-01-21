@@ -12,62 +12,42 @@ import * as os from "os";
 import * as path from "path";
 import { BriefcaseIdValue, ChangeSetToken, IModelDb, IModelHost, IModelJsFs } from "../../imodeljs-backend";
 
-export class TestIModelInfo {
-  private _name: string;
-  private _id: string;
-  private _localReadonlyPath: string;
-  private _localReadWritePath: string;
-  private _changeSets: ChangeSet[];
-
-  constructor(name: string) {
-    this._name = name;
-    this._id = "";
-    this._localReadonlyPath = "";
-    this._localReadWritePath = "";
-    this._changeSets = [];
-  }
-
-  get name(): string { return this._name; }
-  set name(name: string) { this._name = name; }
-  get id(): string { return this._id; }
-  set id(id: string) { this._id = id; }
-  get localReadonlyPath(): string { return this._localReadonlyPath; }
-  set localReadonlyPath(localReadonlyPath: string) { this._localReadonlyPath = localReadonlyPath; }
-  get localReadWritePath(): string { return this._localReadWritePath; }
-  set localReadWritePath(localReadWritePath: string) { this._localReadWritePath = localReadWritePath; }
-  get changeSets(): ChangeSet[] { return this._changeSets; }
-  set changeSets(changeSets: ChangeSet[]) { this._changeSets = changeSets; }
-}
-
-/** Utility to work with iModelHub */
+/** Utility to work with test iModels in the iModelHub */
 export class HubUtility {
-
   public static logCategory = "HubUtility";
 
-  private static makeDirectoryRecursive(dirPath: string) {
-    if (IModelJsFs.existsSync(dirPath))
-      return;
-    HubUtility.makeDirectoryRecursive(path.dirname(dirPath));
-    IModelJsFs.mkdirSync(dirPath);
+  public static TestContextName = "iModelJsIntegrationTest";
+  public static TestIModelNames = {
+    noVersions: "NoVersionsTest",
+    stadium: "Stadium Dataset 1",
+    readOnly: "ReadOnlyTest",
+    readWrite: "ReadWriteTest"
+  };
+
+  private static contextId: GuidString | undefined = undefined;
+  /** Returns the ContextId if a Context with the name exists. Otherwise, returns undefined. */
+  public static async getTestContextId(requestContext: AuthorizedClientRequestContext): Promise<GuidString> {
+    requestContext.enter();
+    if (undefined !== HubUtility.contextId)
+      return HubUtility.contextId;
+    return await HubUtility.queryProjectIdByName(requestContext, HubUtility.TestContextName);
   }
 
-  private static deleteDirectoryRecursive(dirPath: string) {
-    if (!IModelJsFs.existsSync(dirPath))
-      return;
-    try {
-      IModelJsFs.readdirSync(dirPath).forEach((file) => {
-        const curPath = `${dirPath}/${file}`;
-        if (IModelJsFs.lstatSync(curPath)!.isDirectory) {
-          HubUtility.deleteDirectoryRecursive(curPath);
-        } else {
-          // delete file
-          IModelJsFs.unlinkSync(curPath);
-        }
-      });
-      IModelJsFs.rmdirSync(dirPath);
-    } catch (err) {
-      return; // todo: This seems to fail sometimes for no reason
-    }
+  private static imodelCache = new Map<string, GuidString>();
+  /** Returns the iModelId if the iModel exists. Otherwise, returns undefined. */
+  public static async getTestIModelId(requestContext: AuthorizedClientRequestContext, name: string): Promise<GuidString> {
+    requestContext.enter();
+    if (HubUtility.imodelCache.has(name))
+      return HubUtility.imodelCache.get(name)!;
+
+    const projectId = await HubUtility.getTestContextId(requestContext);
+    requestContext.enter();
+
+    const imodelId = await HubUtility.queryIModelIdByName(requestContext, projectId, name);
+    requestContext.enter();
+
+    HubUtility.imodelCache.set(name, imodelId);
+    return imodelId;
   }
 
   private static async queryProjectByName(requestContext: AuthorizedClientRequestContext, projectName: string): Promise<Project | undefined> {
@@ -174,8 +154,8 @@ export class HubUtility {
     // Recreate the download folder if necessary
     if (reDownload) {
       if (IModelJsFs.existsSync(downloadDir))
-        HubUtility.deleteDirectoryRecursive(downloadDir);
-      HubUtility.makeDirectoryRecursive(downloadDir);
+        IModelJsFs.purgeDirSync(downloadDir);
+      IModelJsFs.recursiveMkDirSync(downloadDir);
     }
 
     const iModel = await HubUtility.queryIModelById(requestContext, projectId, iModelId);
@@ -232,14 +212,6 @@ export class HubUtility {
     const iModelId = await HubUtility.queryIModelIdByName(requestContext, projectId, iModelName);
 
     await IModelHost.iModelClient.iModels.delete(requestContext, projectId, iModelId);
-  }
-
-  public static async getTestModelInfo(requestContext: AuthorizedClientRequestContext, testProjectId: string, iModelName: string): Promise<TestIModelInfo> {
-    const iModelInfo = new TestIModelInfo(iModelName);
-    iModelInfo.id = await HubUtility.queryIModelIdByName(requestContext, testProjectId, iModelInfo.name);
-
-    iModelInfo.changeSets = await IModelHost.iModelClient.changeSets.get(requestContext, iModelInfo.id);
-    return iModelInfo;
   }
 
   /** Get the pathname of the briefcase in the supplied directory - assumes a standard layout of the supplied directory */
@@ -494,10 +466,11 @@ export class HubUtility {
   /**
    * Purges all acquired briefcases for the specified iModel (and user), if the specified threshold of acquired briefcases is exceeded
    */
-  public static async purgeAcquiredBriefcasesById(requestContext: AuthorizedClientRequestContext, iModelId: GuidString, onReachThreshold: () => void, acquireThreshold: number = 16): Promise<void> {
+  public static async purgeAcquiredBriefcasesById(requestContext: AuthorizedClientRequestContext, iModelId: GuidString, onReachThreshold: () => void = () => { }, acquireThreshold: number = 16): Promise<void> {
     const briefcases = await IModelHost.iModelClient.briefcases.get(requestContext, iModelId, new BriefcaseQuery().ownedByMe());
     if (briefcases.length > acquireThreshold) {
-      onReachThreshold();
+      if (undefined !== onReachThreshold)
+        onReachThreshold();
 
       const promises = new Array<Promise<void>>();
       briefcases.forEach((briefcase: HubBriefcase) => {
