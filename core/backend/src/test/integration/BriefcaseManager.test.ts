@@ -19,7 +19,7 @@ import {
 import { IModelTestUtils, } from "../IModelTestUtils";
 import { HubUtility } from "./HubUtility";
 import { TestChangeSetUtility } from "./TestChangeSetUtility";
-import { getTestiModelId, getTestProjectId, TestiModels } from "./TestIModelsUtility";
+import { getTestIModelId, getTestContextId, TestIModels } from "./TestIModelsUtility";
 
 describe("BriefcaseManager (#integration)", () => {
   let testContextId: string;
@@ -47,14 +47,14 @@ describe("BriefcaseManager (#integration)", () => {
     requestContext = await TestUtility.getAuthorizedClientRequestContext(TestUsers.regular);
     requestContext.enter();
 
-    testContextId = await getTestProjectId(requestContext);
+    testContextId = await getTestContextId(requestContext);
     requestContext.enter();
-    readOnlyTestIModelId = await getTestiModelId(requestContext, TestiModels.readOnly);
+    readOnlyTestIModelId = await getTestIModelId(requestContext, TestIModels.readOnly);
     requestContext.enter();
 
-    readWriteTestIModelId = await getTestiModelId(requestContext, TestiModels.noVersions);
+    readWriteTestIModelId = await getTestIModelId(requestContext, TestIModels.noVersions);
     requestContext.enter();
-    noVersionsTestIModelId = await getTestiModelId(requestContext, TestiModels.readWrite);
+    noVersionsTestIModelId = await getTestIModelId(requestContext, TestIModels.readWrite);
     requestContext.enter();
 
     // Purge briefcases that are close to reaching the acquire limit
@@ -64,7 +64,7 @@ describe("BriefcaseManager (#integration)", () => {
     requestContext.enter();
     await HubUtility.purgeAcquiredBriefcasesById(requestContext, readWriteTestIModelId, () => { });
     requestContext.enter();
-    await HubUtility.purgeAcquiredBriefcasesById(requestContext, await getTestiModelId(requestContext, TestiModels.stadium), () => { });
+    await HubUtility.purgeAcquiredBriefcasesById(requestContext, await getTestIModelId(requestContext, TestIModels.stadium), () => { });
     requestContext.enter();
 
     managerRequestContext = await TestUtility.getAuthorizedClientRequestContext(TestUsers.manager);
@@ -655,7 +655,7 @@ describe("BriefcaseManager (#integration)", () => {
   });
 
   it("should be able to show progress when downloading a briefcase (#integration)", async () => {
-    const testIModelId = await getTestiModelId(requestContext, TestiModels.stadium);
+    const testIModelId = await getTestIModelId(requestContext, TestIModels.stadium);
     requestContext.enter();
 
     let numProgressCalls: number = 0;
@@ -663,7 +663,7 @@ describe("BriefcaseManager (#integration)", () => {
     readline.clearLine(process.stdout, 0);
     readline.moveCursor(process.stdout, -20, 0);
     const downloadProgress = (loaded: number, total: number) => {
-      const message = `${TestiModels.stadium} Download Progress ... ${(loaded * 100 / total).toFixed(2)}%`;
+      const message = `${TestIModels.stadium} Download Progress ... ${(loaded * 100 / total).toFixed(2)}%`;
       process.stdout.write(message);
       readline.moveCursor(process.stdout, -1 * message.length, 0);
       if (loaded >= total) {
@@ -693,7 +693,7 @@ describe("BriefcaseManager (#integration)", () => {
   });
 
   it("Should be able to cancel an in progress download (#integration)", async () => {
-    const testIModelId = await getTestiModelId(requestContext, TestiModels.stadium);
+    const testIModelId = await getTestIModelId(requestContext, TestIModels.stadium);
     requestContext.enter();
 
     let aborted = 0;

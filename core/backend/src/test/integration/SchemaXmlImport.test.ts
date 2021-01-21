@@ -11,7 +11,7 @@ import { AuthorizedBackendRequestContext, IModelHost, PhysicalElement } from "..
 import { IModelTestUtils } from "../IModelTestUtils";
 import { KnownTestLocations } from "../KnownTestLocations";
 import { HubUtility } from "./HubUtility";
-import { getTestProjectId } from "./TestIModelsUtility";
+import { getTestContextId } from "./TestIModelsUtility";
 
 describe("Schema XML Import Tests (#integration)", () => {
   let managerRequestContext: AuthorizedBackendRequestContext;
@@ -30,7 +30,7 @@ describe("Schema XML Import Tests (#integration)", () => {
 
     managerRequestContext = await TestUtility.getAuthorizedClientRequestContext(TestUsers.manager);
     superRequestContext = await TestUtility.getAuthorizedClientRequestContext(TestUsers.super);
-    testContextId = await getTestProjectId(managerRequestContext);
+    testContextId = await getTestContextId(managerRequestContext);
     managerRequestContext.enter();
 
     readWriteTestIModelName = HubUtility.generateUniqueName("ReadWriteTest");

@@ -10,7 +10,7 @@ import * as path from "path";
 import { KnownLocations, NativeLoggerCategory } from "../../imodeljs-backend";
 import { IModelTestUtils } from "../IModelTestUtils";
 import { HubUtility } from "./HubUtility";
-import { getTestProjectId, getTestiModelId, TestiModels } from "./TestIModelsUtility";
+import { getTestContextId, getTestIModelId, TestIModels } from "./TestIModelsUtility";
 
 // Useful utilities to download/upload test cases from/to iModelHub
 describe("ApplyChangeSets (#integration)", () => {
@@ -49,17 +49,17 @@ describe("ApplyChangeSets (#integration)", () => {
 
     const requestContext = await TestUtility.getAuthorizedClientRequestContext(TestUsers.regular);
 
-    let projectId = await getTestProjectId(requestContext);
-    let iModelId = await getTestiModelId(requestContext, TestiModels.readOnly);
+    let projectId = await getTestContextId(requestContext);
+    let iModelId = await getTestIModelId(requestContext, TestIModels.readOnly);
     await testAllOperations(requestContext, projectId, iModelId);
     requestContext.enter();
 
-    iModelId = await getTestiModelId(requestContext, TestiModels.readWrite);
+    iModelId = await getTestIModelId(requestContext, TestIModels.readWrite);
     requestContext.enter();
     await testAllOperations(requestContext, projectId, iModelId);
     requestContext.enter();
 
-    iModelId = await getTestiModelId(requestContext, TestiModels.noVersions);
+    iModelId = await getTestIModelId(requestContext, TestIModels.noVersions);
     requestContext.enter();
     await testAllOperations(requestContext, projectId, iModelId);
   });

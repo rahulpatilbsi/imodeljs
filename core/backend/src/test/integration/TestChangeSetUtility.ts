@@ -11,7 +11,7 @@ import { ConcurrencyControl } from "../../ConcurrencyControl";
 import { BriefcaseDb, IModelHost } from "../../imodeljs-backend";
 import { IModelTestUtils } from "../IModelTestUtils";
 import { HubUtility } from "./HubUtility";
-import { getTestProjectId } from "./TestIModelsUtility";
+import { getTestContextId } from "./TestIModelsUtility";
 
 /** Test utility to push an iModel and ChangeSets */
 export class TestChangeSetUtility {
@@ -59,7 +59,7 @@ export class TestChangeSetUtility {
   public async createTestIModel(): Promise<BriefcaseDb> {
     this._requestContext.enter();
 
-    this.projectId = await getTestProjectId(this._requestContext);
+    this.projectId = await getTestContextId(this._requestContext);
     this._requestContext.enter();
 
     // Re-create iModel on iModelHub

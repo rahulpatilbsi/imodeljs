@@ -9,7 +9,7 @@ import { assert } from "chai";
 import { AuthorizedBackendRequestContext } from "../../imodeljs-backend";
 import { IModelTestUtils } from "../IModelTestUtils";
 import { HubUtility } from "./HubUtility";
-import { getTestProjectId, getTestiModelId, TestiModels } from "./TestIModelsUtility";
+import { getTestContextId, getTestIModelId, TestIModels } from "./TestIModelsUtility";
 
 // iOS and other mobile platform do not support Agent workflow.
 if (!MobileRpcConfiguration.isMobileBackend) {
@@ -34,13 +34,13 @@ if (!MobileRpcConfiguration.isMobileBackend) {
       requestContext = new AuthorizedBackendRequestContext(jwt);
       requestContext.enter();
 
-      testProjectId = await getTestProjectId(requestContext);
+      testProjectId = await getTestContextId(requestContext);
       requestContext.enter();
 
-      testReadIModelId = await getTestiModelId(requestContext, TestiModels.readOnly);
+      testReadIModelId = await getTestIModelId(requestContext, TestIModels.readOnly);
       requestContext.enter();
 
-      testWriteIModelId = await getTestiModelId(requestContext, TestiModels.readWrite);
+      testWriteIModelId = await getTestIModelId(requestContext, TestIModels.readWrite);
       requestContext.enter();
     });
 

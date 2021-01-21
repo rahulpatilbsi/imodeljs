@@ -18,7 +18,7 @@ import { IModelTestUtils } from "../IModelTestUtils";
 import { CountingIModelImporter, IModelToTextFileExporter, IModelTransformerUtils, TestIModelTransformer } from "../IModelTransformerUtils";
 import { KnownTestLocations } from "../KnownTestLocations";
 import { HubUtility } from "./HubUtility";
-import { getTestProjectId } from "./TestIModelsUtility";
+import { getTestContextId } from "./TestIModelsUtility";
 
 describe("IModelTransformerHub (#integration)", () => {
 
@@ -36,7 +36,7 @@ describe("IModelTransformerHub (#integration)", () => {
 
   it("Transform source iModel to target iModel", async () => {
     const requestContext = await TestUtility.getAuthorizedClientRequestContext(TestUsers.manager);
-    const projectId = await getTestProjectId(requestContext);
+    const projectId = await getTestContextId(requestContext);
     const outputDir = KnownTestLocations.outputDir;
     if (!IModelJsFs.existsSync(outputDir)) {
       IModelJsFs.mkdirSync(outputDir);

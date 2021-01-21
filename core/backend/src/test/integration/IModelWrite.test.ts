@@ -17,7 +17,7 @@ import {
 } from "../../imodeljs-backend";
 import { IModelTestUtils, Timer } from "../IModelTestUtils";
 import { HubUtility } from "./HubUtility";
-import { getTestProjectId, getTestiModelId, TestiModels } from "./TestIModelsUtility";
+import { getTestContextId, getTestIModelId, TestIModels } from "./TestIModelsUtility";
 
 export async function createNewModelAndCategory(requestContext: AuthorizedBackendRequestContext, rwIModel: BriefcaseDb, parent?: Id64String) {
   // Create a new physical model.
@@ -74,8 +74,8 @@ describe("IModelWriteTest (#integration)", () => {
     superRequestContext = await TestUtility.getAuthorizedClientRequestContext(TestUsers.super);
     (superRequestContext as any).activityId = "IModelWriteTest (#integration)";
 
-    testContextId = await getTestProjectId(managerRequestContext);
-    readOnlyTestIModelId = await getTestiModelId(managerRequestContext, TestiModels.readOnly);
+    testContextId = await getTestContextId(managerRequestContext);
+    readOnlyTestIModelId = await getTestIModelId(managerRequestContext, TestIModels.readOnly);
     readWriteTestIModelName = HubUtility.generateUniqueName("ReadWriteTest");
 
     readWriteTestIModelId = await HubUtility.recreateIModel(managerRequestContext, testContextId, readWriteTestIModelName);

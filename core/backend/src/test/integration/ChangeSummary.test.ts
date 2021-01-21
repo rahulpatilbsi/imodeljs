@@ -17,7 +17,7 @@ import { IModelTestUtils } from "../IModelTestUtils";
 import { KnownTestLocations } from "../KnownTestLocations";
 import { HubUtility } from "./HubUtility";
 import { TestChangeSetUtility } from "./TestChangeSetUtility";
-import { getTestProjectId, getTestiModelId, TestiModels } from "./TestIModelsUtility";
+import { getTestContextId, getTestIModelId, TestIModels } from "./TestIModelsUtility";
 
 function setupTest(iModelId: string): void {
   const cacheFilePath: string = BriefcaseManager.getChangeCachePathName(iModelId);
@@ -81,11 +81,11 @@ describe("ChangeSummary (#integration)", () => {
 
     requestContext = await TestUtility.getAuthorizedClientRequestContext(TestUsers.regular);
 
-    testContextId = await getTestProjectId(requestContext);
+    testContextId = await getTestContextId(requestContext);
     requestContext.enter();
-    readOnlyTestIModelId = await getTestiModelId(requestContext, TestiModels.readOnly);
+    readOnlyTestIModelId = await getTestIModelId(requestContext, TestIModels.readOnly);
     requestContext.enter();
-    readWriteTestIModelId = await getTestiModelId(requestContext, TestiModels.readWrite);
+    readWriteTestIModelId = await getTestIModelId(requestContext, TestIModels.readWrite);
     requestContext.enter();
 
     await HubUtility.purgeAcquiredBriefcasesById(requestContext, readOnlyTestIModelId, () => { });

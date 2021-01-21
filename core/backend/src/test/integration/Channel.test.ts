@@ -16,7 +16,7 @@ import { AuthorizedBackendRequestContext, ChannelRootAspect, IModelHost } from "
 import { DictionaryModel } from "../../Model";
 import { IModelTestUtils } from "../IModelTestUtils";
 import { HubUtility } from "./HubUtility";
-import { getTestProjectId, getTestiModelId } from "./TestIModelsUtility";
+import { getTestContextId, getTestIModelId } from "./TestIModelsUtility";
 
 const assert = chai.assert;
 chai.use(chaiAsPromised);
@@ -41,7 +41,7 @@ describe("Channel Control (#integration)", () => {
 
   before(async () => {
     managerRequestContext = await TestUtility.getAuthorizedClientRequestContext(TestUsers.manager);
-    testProjectId = await getTestProjectId(managerRequestContext);
+    testProjectId = await getTestContextId(managerRequestContext);
     readWriteTestIModelName = HubUtility.generateUniqueName("ChannelControlIModel");
 
     readWriteTestIModelId = await HubUtility.recreateIModel(managerRequestContext, testProjectId, readWriteTestIModelName);

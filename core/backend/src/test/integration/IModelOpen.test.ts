@@ -11,7 +11,7 @@ import { SnapshotDb } from "../../IModelDb";
 import { AuthorizedBackendRequestContext, BriefcaseManager, IModelHost } from "../../imodeljs-backend";
 import { IModelTestUtils } from "../IModelTestUtils";
 import { HubUtility } from "./HubUtility";
-import { getTestProjectId, getTestiModelId, TestiModels } from "./TestIModelsUtility";
+import { getTestContextId, getTestIModelId, TestIModels } from "./TestIModelsUtility";
 
 describe("IModelOpen (#integration)", () => {
 
@@ -24,10 +24,10 @@ describe("IModelOpen (#integration)", () => {
     IModelTestUtils.setupLogging();
 
     requestContext = await TestUtility.getAuthorizedClientRequestContext(TestUsers.regular);
-    testProjectId = await getTestProjectId(requestContext);
+    testProjectId = await getTestContextId(requestContext);
     requestContext.enter();
 
-    testIModelId = await getTestiModelId(requestContext, TestiModels.stadium);
+    testIModelId = await getTestIModelId(requestContext, TestIModels.stadium);
     testChangeSetId = (await HubUtility.queryLatestChangeSet(requestContext, testIModelId))!.wsgId;
   });
 

@@ -10,7 +10,7 @@ import { ChangedElementsManager } from "../../ChangedElementsManager";
 import { AuthorizedBackendRequestContext, BriefcaseManager, ChangedElementsDb, IModelHost, IModelJsFs } from "../../imodeljs-backend";
 import { IModelTestUtils } from "../IModelTestUtils";
 import { HubUtility } from "./HubUtility";
-import { getTestiModelId, getTestProjectId, TestiModels } from "./TestIModelsUtility";
+import { getTestIModelId, getTestContextId, TestIModels } from "./TestIModelsUtility";
 
 function setupTest(iModelId: string): void {
   const cacheFilePath: string = BriefcaseManager.getChangeCachePathName(iModelId);
@@ -26,9 +26,9 @@ describe("ChangedElements (#integration)", () => {
   before(async () => {
     requestContext = await TestUtility.getAuthorizedClientRequestContext(TestUsers.regular);
 
-    testContextId = await getTestProjectId(requestContext);
+    testContextId = await getTestContextId(requestContext);
     requestContext.enter();
-    testIModelId = await getTestiModelId(requestContext, TestiModels.readOnly);
+    testIModelId = await getTestIModelId(requestContext, TestIModels.readOnly);
     requestContext.enter();
 
     // Purge briefcases that are close to reaching the acquire limit
