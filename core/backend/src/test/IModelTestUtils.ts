@@ -402,6 +402,7 @@ export class IModelTestUtils {
     IModelJsConfig.init(true /* suppress exception */, false /* suppress error message */, Config.App);
     const config = new IModelHostConfiguration();
     config.concurrentQuery.concurrent = 4; // for test restrict this to two threads. Making closing connection faster
+    config.cacheDir = path.join(__dirname, ".cache");  // Set the cache dir to be under the lib directory.
     await IModelHost.startup(config);
   }
 

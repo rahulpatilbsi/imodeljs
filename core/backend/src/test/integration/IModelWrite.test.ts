@@ -685,17 +685,17 @@ describe("IModelWriteTest (#integration)", () => {
     const adminRequestContext = await TestUtility.getAuthorizedClientRequestContext(TestUsers.superManager);
     let timer = new Timer("delete iModels");
     const iModelName = "LocksConflictTestII";
-    const iModels = await IModelHost.iModelClient.iModels.get(adminRequestContext, writeTestProjectId, new IModelQuery().byName(iModelName));
+    const iModels = await IModelHost.iModelClient.iModels.get(adminRequestContext, testContextId, new IModelQuery().byName(iModelName));
     for (const iModelTemp of iModels) {
-      await IModelHost.iModelClient.iModels.delete(adminRequestContext, writeTestProjectId, iModelTemp.id!);
+      await IModelHost.iModelClient.iModels.delete(adminRequestContext, testContextId, iModelTemp.id!);
       adminRequestContext.enter();
     }
     timer.end();
 
     timer = new Timer("create iModel");
-    const rwIModelId = await BriefcaseManager.create(adminRequestContext, writeTestProjectId, iModelName, { rootSubject: { name: "TestSubject" } });
+    const rwIModelId = await BriefcaseManager.create(adminRequestContext, testContextId, iModelName, { rootSubject: { name: "TestSubject" } });
 
-    const rwIModel = await IModelTestUtils.downloadAndOpenBriefcase({ requestContext: adminRequestContext, contextId: writeTestProjectId, iModelId: rwIModelId });
+    const rwIModel = await IModelTestUtils.downloadAndOpenBriefcase({ requestContext: adminRequestContext, contextId: testContextId, iModelId: rwIModelId });
     adminRequestContext.enter();
     timer.end();
 
@@ -721,7 +721,7 @@ describe("IModelWriteTest (#integration)", () => {
 
     //  --- Briefcase 2
     //  Have another briefcase take out an exclusive lock on element #1
-    const briefcase2 = await IModelTestUtils.downloadAndOpenBriefcase({ requestContext: superRequestContext, contextId: writeTestProjectId, iModelId: rwIModelId });
+    const briefcase2 = await IModelTestUtils.downloadAndOpenBriefcase({ requestContext: superRequestContext, contextId: testContextId, iModelId: rwIModelId });
     superRequestContext.enter();
 
     assert.notEqual(briefcase2.briefcaseId, rwIModel.briefcaseId);

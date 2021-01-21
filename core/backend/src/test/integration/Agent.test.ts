@@ -13,7 +13,7 @@ import { getTestProjectId, getTestiModelId, TestiModels } from "./TestIModelsUti
 
 // iOS and other mobile platform do not support Agent workflow.
 if (!MobileRpcConfiguration.isMobileBackend) {
-  describe.only("Agent (#integration)", () => {
+  describe("Agent (#integration)", () => {
     let testProjectId: string;
     let testReadIModelId: string;
     let testWriteIModelId: string;

@@ -44,12 +44,7 @@ describe("Channel Control (#integration)", () => {
     testProjectId = await getTestProjectId(managerRequestContext);
     readWriteTestIModelName = HubUtility.generateUniqueName("ChannelControlIModel");
 
-    HubUtility.recreateIModel(managerRequestContext, testProjectId, readWriteTestIModelName);
-
-    readWriteTestIModelId = await getTestiModelId(managerRequestContext, readWriteTestIModelName);
-
-    // Purge briefcases that are close to reaching the acquire limit
-    await HubUtility.purgeAcquiredBriefcasesById(managerRequestContext, readWriteTestIModelId, () => { });
+    readWriteTestIModelId = await HubUtility.recreateIModel(managerRequestContext, testProjectId, readWriteTestIModelName);
   });
 
   after(async () => {

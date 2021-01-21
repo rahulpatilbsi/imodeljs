@@ -35,7 +35,7 @@ const imodelCache = new Map<string, GuidString>();
 /** Returns the iModelId if the iModel exists. Otherwise, returns undefined. */
 export async function getTestiModelId(requestContext: AuthorizedClientRequestContext, name: string): Promise<GuidString> {
   requestContext.enter();
-  if (undefined !== imodelCache.has(name))
+  if (imodelCache.has(name))
     return imodelCache.get(name)!;
 
   const projectId = await getTestProjectId(requestContext);

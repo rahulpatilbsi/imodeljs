@@ -2,7 +2,7 @@
 * Copyright (c) Bentley Systems, Incorporated. All rights reserved.
 * See LICENSE.md in the project root for license terms and full copyright notice.
 *--------------------------------------------------------------------------------------------*/
-import { DbResult, Id64, Id64String, Logger, LogLevel, PerfLogger } from "@bentley/bentleyjs-core";
+import { DbResult, GuidString, Id64, Id64String, Logger, LogLevel, PerfLogger } from "@bentley/bentleyjs-core";
 import {
   ChangedValueState, ChangeOpCode, ColorDef, IModel, IModelVersion, SubCategoryAppearance,
 } from "@bentley/imodeljs-common";
