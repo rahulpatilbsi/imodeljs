@@ -73,6 +73,7 @@ export * from "./Render";
 export * from "./RenderMaterial";
 export * from "./RenderSchedule";
 export * from "./RenderTexture";
+export * from "./RenderTimelineScript";
 export * from "./RgbColor";
 export * from "./RpcInterface";
 export * from "./RpcManager";
