@@ -153,14 +153,3 @@ export interface ModelTimelineProps extends TimelineProps {
  * @beta
  */
 export type RenderTimelineScriptProps = ModelTimelineProps[];
-
-/*
-export class RenderTimelineScript {
-  protected readonly _props: RenderTimelineScriptProps;
-  protected _duration?: Range1d;
-
-  protected constructor(props: RenderTimelineScriptProps) {
-    this._props = props;
-  }
-}
-*/
