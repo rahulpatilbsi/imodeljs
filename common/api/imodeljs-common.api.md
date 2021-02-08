@@ -51,6 +51,7 @@ import { OpenMode } from '@bentley/bentleyjs-core';
 import { OrderedId64Iterable } from '@bentley/bentleyjs-core';
 import { Point2d } from '@bentley/geometry-core';
 import { Point3d } from '@bentley/geometry-core';
+import { Point4dProps } from '@bentley/geometry-core';
 import { PolyfaceVisitor } from '@bentley/geometry-core';
 import { Range1d } from '@bentley/geometry-core';
 import { Range1dProps } from '@bentley/geometry-core';
@@ -1408,6 +1409,15 @@ export class ColorDef {
 // @public
 export type ColorDefProps = number;
 
+// @beta
+export interface ColorEntryProps extends TimelineEntryProps {
+    value: {
+        red: number;
+        green: number;
+        blue: number;
+    };
+}
+
 // @internal (undocumented)
 export class ColorIndex {
     constructor();
@@ -1586,6 +1596,19 @@ export interface CutStyleProps {
     appearance?: FeatureAppearanceProps;
     hiddenLine?: HiddenLine.SettingsProps;
     viewflags?: ViewFlagOverridesProps;
+}
+
+// @beta
+export interface CuttingPlaneEntryProps extends TimelineEntryProps {
+    value: CuttingPlaneProps;
+}
+
+// @beta
+export interface CuttingPlaneProps {
+    direction: XYZProps;
+    hidden?: boolean;
+    position: XYZProps;
+    visible?: boolean;
 }
 
 export { DbResult }
@@ -2297,6 +2320,12 @@ export interface ElementGraphicsRequestProps {
     readonly treeFlags?: TreeFlags;
 }
 
+// @beta
+export interface ElementGroupProps {
+    ids: CompressedId64Set;
+    includeDescendants?: boolean;
+}
+
 // @alpha
 export interface ElementIdsAndRangesProps {
     readonly ids: CompressedId64Set;
@@ -2325,6 +2354,12 @@ export interface ElementProps extends EntityProps {
     model: Id64String;
     parent?: RelatedElementProps;
     userLabel?: string;
+}
+
+// @beta
+export interface ElementTimelineProps extends TimelineProps {
+    batchId: number;
+    elementIds: CompressedId64Set | number | Id64String[];
 }
 
 // @beta
@@ -4052,6 +4087,12 @@ export const Interpolation: {
 export type InterpolationFunction = (v: any, k: number) => number;
 
 // @beta
+export enum InterpolationType {
+    Linear = 2,
+    Step = 1
+}
+
+// @beta
 export abstract class IpcHandler {
     abstract get channelName(): string;
     static register(): RemoveFunction;
@@ -4732,6 +4773,28 @@ export interface ModelQueryParams extends EntityQueryParams {
 export interface ModelSelectorProps extends DefinitionElementProps {
     // (undocumented)
     models: Id64Array;
+}
+
+// @beta
+export class ModelTimelineBuilder extends TimelineBuilder {
+    constructor(scriptBuilder: RenderTimelineScriptBuilder, modelId: Id64String);
+    addElementGroup(props: ElementGroupProps): number;
+    addElementTimeline(elementGroupIndex: number): TimelineBuilder;
+    // (undocumented)
+    readonly modelId: Id64String;
+    // @alpha (undocumented)
+    realityModelUrl?: string;
+    // (undocumented)
+    toJSON(): ModelTimelineProps;
+}
+
+// @beta
+export interface ModelTimelineProps extends TimelineProps {
+    elementGroups?: ElementGroupProps[];
+    elementTimelines: ElementTimelineProps[];
+    modelId: Id64String;
+    // @alpha (undocumented)
+    realityModelUrl?: string;
 }
 
 // @public
@@ -5895,6 +5958,17 @@ export namespace RenderTexture {
         TileSection = 2
     }
 }
+
+// @beta
+export class RenderTimelineScriptBuilder {
+    addModelTimeline(modelId: Id64String): ModelTimelineBuilder;
+    finish(): RenderTimelineScriptProps;
+    // @internal (undocumented)
+    getNextBatchId(): number;
+    }
+
+// @beta
+export type RenderTimelineScriptProps = ModelTimelineProps[];
 
 // @public
 export interface RepositoryLinkProps extends UrlLinkProps {
@@ -7602,6 +7676,46 @@ export interface TileVersionInfo {
     formatVersion: number;
 }
 
+// @beta
+export class TimelineBuilder {
+    // (undocumented)
+    addColorEntry(props: ColorEntryProps): void;
+    // (undocumented)
+    addCuttingPlaneEntry(props: CuttingPlaneEntryProps): void;
+    // (undocumented)
+    addTransformEntry(props: TransformEntryProps): void;
+    // (undocumented)
+    addVisibilityEntry(props: VisibilityEntryProps): void;
+    // (undocumented)
+    protected readonly _props: TimelineProps;
+}
+
+// @beta
+export interface TimelineEntryProps {
+    interpolation: InterpolationType;
+    time: number;
+}
+
+// @beta
+export interface TimelineProps {
+    colorTimeline?: ColorEntryProps[];
+    cuttingPlaneTimeline?: CuttingPlaneEntryProps[];
+    transformTimeline?: TransformEntryProps[];
+    visibilityTimeline?: VisibilityEntryProps[];
+}
+
+// @beta
+export interface TransformComponentProps {
+    orientation: Point4dProps;
+    pivot: XYZProps;
+    position: XYZProps;
+}
+
+// @beta
+export interface TransformEntryProps extends TimelineEntryProps {
+    value: TransformProps | TransformComponentProps;
+}
+
 // @internal
 export enum TreeFlags {
     // (undocumented)
@@ -8143,6 +8257,11 @@ export interface ViewStateProps {
     sheetProps?: SheetProps;
     // (undocumented)
     viewDefinitionProps: ViewDefinitionProps;
+}
+
+// @beta
+export interface VisibilityEntryProps extends TimelineEntryProps {
+    value: number;
 }
 
 // @internal (undocumented)

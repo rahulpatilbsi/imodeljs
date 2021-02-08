@@ -81,6 +81,7 @@ public;CodeSpec
 public;ColorByName
 public;ColorDef
 public;ColorDefProps = number
+beta;ColorEntryProps 
 internal;ColorIndex
 public;CommonLoggerCategory
 internal;compareIModelTileTreeIds(lhs: IModelTileTreeId, rhs: IModelTileTreeId): number
@@ -101,6 +102,8 @@ internal;CurrentImdlVersion
 beta;CustomAttribute
 beta;CutStyle
 beta;CutStyleProps
+beta;CuttingPlaneEntryProps 
+beta;CuttingPlaneProps
 beta;DecorationGeometryProps
 alpha;defaultDesktopAuthorizationClientExpiryBuffer: number
 alpha;defaultMobileAuthorizationClientExpiryBuffer: number
@@ -149,9 +152,11 @@ alpha;ElementGeometryOpcode
 alpha;ElementGeometryRequest
 alpha;ElementGeometryUpdate
 internal;ElementGraphicsRequestProps
+beta;ElementGroupProps
 alpha;ElementIdsAndRangesProps
 public;ElementLoadProps
 public;ElementProps 
+beta;ElementTimelineProps 
 beta;EntityMetaData 
 beta;EntityMetaDataProps
 public;EntityProps
@@ -277,6 +282,7 @@ internal;INSTANCE: unique symbol
 beta;InternetConnectivityStatus
 beta;Interpolation:
 beta;InterpolationFunction = (v: any, k: number) => number
+beta;InterpolationType
 beta;class IpcHandler
 internal;IpcInvokeReturn =
 beta;IpcListener = (evt: Event, ...args: any[]) => void
@@ -338,6 +344,8 @@ public;ModelLoadProps
 public;ModelProps 
 public;ModelQueryParams 
 public;ModelSelectorProps 
+beta;ModelTimelineBuilder 
+beta;ModelTimelineProps 
 public;MonochromeMode
 internal;nativeAppChannel = "nativeApp"
 internal;NativeAppIpc
@@ -427,6 +435,8 @@ public;RenderMode
 beta;RenderSchedule
 beta;class RenderTexture 
 beta;RenderTexture
+beta;RenderTimelineScriptBuilder
+beta;RenderTimelineScriptProps = ModelTimelineProps[]
 public;RepositoryLinkProps 
 beta;RequestNewBriefcaseProps
 beta;class ResponseHandler
@@ -574,6 +584,11 @@ internal;TileTreeContentIds
 internal;TileTreeMetadata
 internal;TileTreeProps
 alpha;TileVersionInfo
+beta;TimelineBuilder
+beta;TimelineEntryProps
+beta;TimelineProps
+beta;TransformComponentProps
+beta;TransformEntryProps 
 internal;TreeFlags
 beta;Tween
 beta;TweenCallback = (obj: any) => void
@@ -601,6 +616,7 @@ public;ViewFlags
 public;ViewQueryParams 
 public;ViewStateLoadProps
 public;ViewStateProps
+beta;VisibilityEntryProps 
 internal;WEB_RPC_CONSTANTS:
 public;class WebAppRpcProtocol 
 public;WebAppRpcRequest 

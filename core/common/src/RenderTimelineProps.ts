@@ -8,7 +8,6 @@
 
 import { CompressedId64Set, Id64String } from "@bentley/bentleyjs-core";
 import { Point4dProps, TransformProps, XYZProps } from "@bentley/geometry-core";
-import { RgbColorProps } from "./RgbColor";
 
 /** Specifies how interpolation between two [[TimelineEntryProps]] should be performed.
  * @note Any values not listed below are treated as `Step`.
@@ -46,8 +45,12 @@ export interface VisibilityEntryProps extends TimelineEntryProps {
  * @beta
  */
 export interface ColorEntryProps extends TimelineEntryProps {
-  /** The color in which to draw the geometry. */
-  value: RgbColorProps;
+  /** The color in which to draw the geometry, with each component an integer in [0, 255]. */
+  value: {
+    red: number;
+    green: number;
+    blue: number;
+  };
 }
 
 /** Describes a clipping plane for use in a [[CuttingPlaneEntryProps]].
