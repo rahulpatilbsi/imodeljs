@@ -626,6 +626,42 @@ describe("Element and ElementAspect roundtrip test for all type of properties", 
     imodel.close();
   });
 
+  it.only("Roundtrip int, long, double and boolean as strings", async () => {
+    const testFileName = IModelTestUtils.prepareOutputFile(subDirName, "roundtrip_prim_as_strings.bim");
+    const imodel = IModelTestUtils.createSnapshotFromSeed(testFileName, iModelPath);
+    const spatialCategoryId = SpatialCategory.queryCategoryIdByName(imodel, IModel.dictionaryId, categoryName);
+    const [, newModelId] = IModelTestUtils.createAndInsertPhysicalPartitionAndModel(imodel, Code.createEmpty(), true);
+
+    const insertedValue = {
+      classFullName: "ElementRoundTripTest:TestElement",
+      model: newModelId,
+      code: Code.createEmpty(),
+      category: spatialCategoryId,
+      i: "4322",
+      l: "98283333",
+      d: "-2343.342",
+      array_i: ["101", "202", "-345"],
+      array_l: ["12334343434", "3434343434", "12"],
+      array_d: ["1023.34", "3023.34", "-3432.033"],
+    };
+
+    // insert a element
+    const id = imodel.elements.insertElement(insertedValue);
+    assert.isTrue(Id64.isValidId64(id), "insert worked");
+    imodel.saveChanges();
+
+    // verify inserted element properties
+    const actualValue = imodel.elements.getElementProps<TestElement>(id);
+    assert.equal(actualValue.i, 4322);
+    assert.equal(actualValue.l, 98283333);
+    assert.equal(actualValue.d, -2343.342);
+    assert.equal(actualValue.array_i![2], -345);
+    assert.equal(actualValue.array_l![1], 3434343434);
+    assert.equal(actualValue.array_d![2], -3432.033);
+
+    imodel.close();
+  });
+
   function verifyTestElementRefersToElements(actualValue: TestElementRefersToElements, expectedValue: TestElementRefersToElements) {
     assert.equal(actualValue.sourceId, expectedValue.sourceId, "'sourceId' type property did not roundtrip as expected");
     assert.equal(actualValue.targetId, expectedValue.targetId, "'targetId' type property did not roundtrip as expected");
