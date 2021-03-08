@@ -1,6 +1,6 @@
 {
   "name": "@bentley/presentation-components",
-  "version": "2.11.0-dev.14",
+  "version": "2.14.0-dev.13",
   "description": "React components based on iModel.js Presentation library",
   "main": "lib/presentation-components.js",
   "typings": "lib/presentation-components",
@@ -36,7 +36,7 @@
     "docs:reference": "betools docs --includes=../../generated-docs/extract --json=../../generated-docs/presentation/presentation-components/file.json --tsIndexFile=presentation-components.ts --onlyJson --excludeGlob=**/presentation-components.ts",
     "extract": "betools extract --fileExt=ts --extractFrom=./src/test --recursive --out=../../generated-docs/extract",
     "extract-api": "betools extract-api --entry=presentation-components",
-    "lint": "eslint -f visualstudio --max-warnings 0 ./src/**/*.{ts,tsx} 1>&2",
+    "lint": "eslint -f visualstudio \"./src/**/*.{ts,tsx}\" 1>&2",
     "pseudolocalize": "betools pseudolocalize --englishDir ./lib/public/locales/en --out ./lib/public/locales/en-PSEUDO",
     "test": "mocha --opts ../mocha.opts -r ignore-styles -r jsdom-global/register --file ./lib/test/index.test.js \"./lib/test/**/*.test.js\"",
     "test:watch": "npm test -- --reporter min --watch-extensions ts,tsx --watch"
@@ -47,30 +47,31 @@
     "rxjs": "^6.6.2"
   },
   "peerDependencies": {
-    "@bentley/bentleyjs-core": "^2.11.0-dev.14",
-    "@bentley/imodeljs-common": "^2.11.0-dev.14",
-    "@bentley/imodeljs-frontend": "^2.11.0-dev.14",
-    "@bentley/imodeljs-i18n": "^2.11.0-dev.14",
-    "@bentley/presentation-common": "^2.11.0-dev.14",
-    "@bentley/presentation-frontend": "^2.11.0-dev.14",
-    "@bentley/ui-abstract": "^2.11.0-dev.14",
-    "@bentley/ui-components": "^2.11.0-dev.14",
-    "@bentley/ui-core": "^2.11.0-dev.14",
+    "@bentley/bentleyjs-core": "^2.14.0-dev.13",
+    "@bentley/imodeljs-common": "^2.14.0-dev.13",
+    "@bentley/imodeljs-frontend": "^2.14.0-dev.13",
+    "@bentley/imodeljs-i18n": "^2.14.0-dev.13",
+    "@bentley/presentation-common": "^2.14.0-dev.13",
+    "@bentley/presentation-frontend": "^2.14.0-dev.13",
+    "@bentley/ui-abstract": "^2.14.0-dev.13",
+    "@bentley/ui-components": "^2.14.0-dev.13",
+    "@bentley/ui-core": "^2.14.0-dev.13",
     "react": "^16.8.0",
     "react-dom": "^16.8.0"
   },
   "devDependencies": {
-    "@bentley/bentleyjs-core": "2.11.0-dev.14",
-    "@bentley/build-tools": "2.11.0-dev.14",
-    "@bentley/eslint-plugin": "2.11.0-dev.14",
-    "@bentley/imodeljs-common": "2.11.0-dev.14",
-    "@bentley/imodeljs-frontend": "2.11.0-dev.14",
-    "@bentley/imodeljs-i18n": "2.11.0-dev.14",
-    "@bentley/presentation-common": "2.11.0-dev.14",
-    "@bentley/presentation-frontend": "2.11.0-dev.14",
-    "@bentley/ui-abstract": "2.11.0-dev.14",
-    "@bentley/ui-components": "2.11.0-dev.14",
-    "@bentley/ui-core": "2.11.0-dev.14",
+    "@bentley/bentleyjs-core": "2.14.0-dev.13",
+    "@bentley/build-tools": "2.14.0-dev.13",
+    "@bentley/eslint-plugin": "2.14.0-dev.13",
+    "@bentley/imodeljs-common": "2.14.0-dev.13",
+    "@bentley/imodeljs-frontend": "2.14.0-dev.13",
+    "@bentley/imodeljs-i18n": "2.14.0-dev.13",
+    "@bentley/presentation-common": "2.14.0-dev.13",
+    "@bentley/presentation-frontend": "2.14.0-dev.13",
+    "@bentley/ui-abstract": "2.14.0-dev.13",
+    "@bentley/ui-components": "2.14.0-dev.13",
+    "@bentley/ui-core": "2.14.0-dev.13",
+    "@testing-library/react": "^8.0.1",
     "@testing-library/react-hooks": "^3.2.1",
     "@types/chai": "^4.1.4",
     "@types/chai-as-promised": "^7",
@@ -97,7 +98,7 @@
     "eslint": "^6.8.0",
     "faker": "^4.1.0",
     "ignore-styles": "^5.0.1",
-    "immer": "^6.0.3",
+    "immer": "^8.0.1",
     "jsdom-global": "3.0.2",
     "mocha": "^5.2.0",
     "nyc": "^14.0.0",
@@ -106,7 +107,7 @@
     "sinon": "^9.0.2",
     "sinon-chai": "^3.2.0",
     "typemoq": "^2.1.0",
-    "typescript": "~3.7.4",
+    "typescript": "~4.1.0",
     "xmlhttprequest": "^1.8.0"
   },
   "nyc": {
@@ -121,6 +122,11 @@
       "ts-node/register",
       "ignore-styles",
       "jsdom-global/register"
+    ],
+    "exclude": [
+      "src/presentation-components.ts",
+      "src/test/**",
+      "lib/test/**"
     ]
   },
   "eslintConfig": {

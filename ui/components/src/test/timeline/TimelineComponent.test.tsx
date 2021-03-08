@@ -83,6 +83,36 @@ class TestTimelineDataProvider extends BaseTimelineDataProvider {
   }
 }
 
+function TestRepeatTimelineComponent() {
+  const duration = 20 * 1000;
+  const startDate = new Date(2014, 6, 6);
+  const endDate = new Date(2016, 8, 12);
+  const [loop, setLoop] = React.useState <boolean> (false);
+
+  const handleOnSettingsChange = (settings: PlaybackSettings) => {
+    if (settings.loop !== undefined) {
+      setLoop(settings.loop);
+    }
+  };
+
+  return (
+    <div>
+      <TimelineComponent
+        startDate={startDate}
+        endDate={endDate}
+        initialDuration={0}
+        totalDuration={duration}
+        minimized={true}
+        showDuration={true}
+        alwaysMinimized={true}
+        repeat={loop}
+        onSettingsChange={handleOnSettingsChange}
+        componentId={"testApp-testRepeatTimeline"} // qualify id with "<appName>-" to ensure uniqueness
+      />
+    </div>
+  );
+}
+
 describe("<TimelineComponent showDuration={true} />", () => {
   let fakeTimers: sinon.SinonFakeTimers | undefined;
   const rafSpy = sinon.spy((cb: FrameRequestCallback) => {
@@ -586,5 +616,151 @@ describe("<TimelineComponent showDuration={true} />", () => {
     UiAdmin.sendUiEvent({ uiComponentId: "TestTimeline" });
     // onPlayPause should not be called again, since the args don't include an action
     expect(spyOnPlayPause.calledThrice).to.be.true;
+  });
+  it("re-render on repeat change", () => {
+    const dataProvider = new TestTimelineDataProvider(false);
+    const renderedComponent = render(
+      <TimelineComponent
+        startDate={dataProvider.start}
+        endDate={dataProvider.end}
+        initialDuration={dataProvider.initialDuration}
+        totalDuration={dataProvider.duration}
+        milestones={dataProvider.getMilestones()}
+        minimized={false}
+        showDuration={true}
+        repeat={false}
+        onChange={dataProvider.onAnimationFractionChanged}
+        onSettingsChange={dataProvider.onPlaybackSettingChanged}
+        onPlayPause={dataProvider.onPlayPause}
+        alwaysMinimized={false}
+      />,
+    );
+
+    expect(renderedComponent).not.to.be.undefined;
+    expect(dataProvider.getSettings().loop).to.be.false;
+
+    // trigger call to componentDidUpdate
+    renderedComponent.rerender(
+      <TimelineComponent
+        startDate={dataProvider.start}
+        endDate={dataProvider.end}
+        initialDuration={50000}
+        totalDuration={dataProvider.duration}
+        milestones={dataProvider.getMilestones()}
+        minimized={false}
+        showDuration={true}
+        repeat={true}
+        onChange={dataProvider.onAnimationFractionChanged}
+        onSettingsChange={dataProvider.onPlaybackSettingChanged}
+        onPlayPause={dataProvider.onPlayPause}
+        alwaysMinimized={false}
+      />,
+    );
+    expect(dataProvider.getSettings().loop).to.be.true;
+  });
+  it("test repeat button does not loop endlessly with external state variable", () => {
+    const renderedComponent = render(
+      <TestRepeatTimelineComponent  />,
+    );
+
+    expect(renderedComponent).not.to.be.undefined;
+
+    const settingMenuSpan = renderedComponent.getByTestId("timeline-settings");
+    fireEvent.click(settingMenuSpan);
+
+    const menuPopupDiv = renderedComponent.getByTestId("timeline-contextmenu-div");
+    expect(menuPopupDiv).not.to.be.null;
+    // renderedComponent.debug();
+    const repeatItem = renderedComponent.getByText("timeline.repeat");
+    expect(repeatItem).not.to.be.null;
+    fireEvent.click(repeatItem);
+  });
+  it("re-render on totalDuration change", () => {
+    const dataProvider = new TestTimelineDataProvider(false);
+    const renderedComponent = render(
+      <TimelineComponent
+        startDate={dataProvider.start}
+        endDate={dataProvider.end}
+        initialDuration={dataProvider.initialDuration}
+        totalDuration={dataProvider.duration}
+        milestones={dataProvider.getMilestones()}
+        minimized={false}
+        showDuration={true}
+        repeat={false}
+        onChange={dataProvider.onAnimationFractionChanged}
+        onSettingsChange={dataProvider.onPlaybackSettingChanged}
+        onPlayPause={dataProvider.onPlayPause}
+        alwaysMinimized={false}
+      />,
+    );
+
+    expect(renderedComponent).not.to.be.undefined;
+
+    const newDuration = dataProvider.getSettings().duration! * 2;
+
+    // trigger call to componentDidUpdate
+    renderedComponent.rerender(
+      <TimelineComponent
+        startDate={dataProvider.start}
+        endDate={dataProvider.end}
+        initialDuration={50000}
+        totalDuration={newDuration}
+        milestones={dataProvider.getMilestones()}
+        minimized={false}
+        showDuration={true}
+        repeat={true}
+        onChange={dataProvider.onAnimationFractionChanged}
+        onSettingsChange={dataProvider.onPlaybackSettingChanged}
+        onPlayPause={dataProvider.onPlayPause}
+        alwaysMinimized={false}
+      />,
+    );
+    expect(dataProvider.getSettings().duration).to.be.eq(newDuration);
+  });
+  it("re-render on new start and end date", () => {
+    const dataProvider = new TestTimelineDataProvider(false);
+    const renderedComponent = render(
+      <TimelineComponent
+        startDate={dataProvider.start}
+        endDate={dataProvider.end}
+        initialDuration={dataProvider.initialDuration}
+        totalDuration={dataProvider.duration}
+        milestones={dataProvider.getMilestones()}
+        minimized={false}
+        showDuration={true}
+        onChange={dataProvider.onAnimationFractionChanged}
+        onSettingsChange={dataProvider.onPlaybackSettingChanged}
+        onPlayPause={dataProvider.onPlayPause}
+        alwaysMinimized={false}
+      />,
+    );
+
+    expect(renderedComponent).not.to.be.undefined;
+    const newStartDate = new Date(2019, 4, 1);
+    const newEndDate = new Date(2020, 5, 7);
+
+    // trigger call to componentDidUpdate
+    renderedComponent.rerender(
+      <TimelineComponent
+        startDate={newStartDate}
+        endDate={newEndDate}
+        initialDuration={50000}
+        totalDuration={dataProvider.duration}
+        milestones={dataProvider.getMilestones()}
+        minimized={false}
+        showDuration={true}
+        onChange={dataProvider.onAnimationFractionChanged}
+        onSettingsChange={dataProvider.onPlaybackSettingChanged}
+        onPlayPause={dataProvider.onPlayPause}
+        alwaysMinimized={false}
+      />,
+    );
+    const startDateItem = renderedComponent.container.querySelector(".start-date") as HTMLElement;
+    expect(startDateItem).not.to.be.null;
+    expect(startDateItem?.innerHTML).to.be.eq(newStartDate.toLocaleDateString());
+
+    const endDateItem = renderedComponent.container.querySelector(".end-date") as HTMLElement;
+    expect(endDateItem).not.to.be.null;
+    expect(endDateItem?.innerHTML).to.be.eq(newEndDate.toLocaleDateString());
   });
 });

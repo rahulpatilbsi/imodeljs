@@ -8,13 +8,14 @@
 
 import { assert, BentleyStatus, Dictionary, dispose, Id64, Id64String } from "@bentley/bentleyjs-core";
 import { ClipVector, Point3d, Transform } from "@bentley/geometry-core";
-import { ColorDef, ElementAlignedBox3d, Gradient, ImageBuffer, IModelError, PackedFeatureTable, RenderMaterial, RenderTexture } from "@bentley/imodeljs-common";
+import {
+  ColorDef, ElementAlignedBox3d, Gradient, ImageBuffer, ImageSource, ImageSourceFormat, IModelError, PackedFeatureTable, RenderMaterial, RenderTexture,
+} from "@bentley/imodeljs-common";
 import { Capabilities, DepthType, WebGLContext } from "@bentley/webgl-compatibility";
 import { SkyBox } from "../../DisplayStyleState";
 import { IModelApp } from "../../IModelApp";
 import { IModelConnection } from "../../IModelConnection";
 import { MapTileTreeReference, TileTreeReference } from "../../tile/internal";
-import { ToolAdmin } from "../../tools/ToolAdmin";
 import { Viewport } from "../../Viewport";
 import { ViewRect } from "../../ViewRect";
 import { GraphicBranch, GraphicBranchOptions } from "../GraphicBranch";
@@ -28,7 +29,9 @@ import { RenderClipVolume } from "../RenderClipVolume";
 import { RenderGraphic, RenderGraphicOwner } from "../RenderGraphic";
 import { RenderMemory } from "../RenderMemory";
 import { DebugShaderFile, GLTimerResultCallback, RenderDiagnostics, RenderSystem, RenderSystemDebugControl, RenderTerrainMeshGeometry, TerrainTexture } from "../RenderSystem";
+import { ScreenSpaceEffectBuilder, ScreenSpaceEffectBuilderParams } from "../ScreenSpaceEffectBuilder";
 import { RenderTarget } from "../RenderTarget";
+import { imageElementFromImageSource } from "../../ImageUtil";
 import { BackgroundMapDrape } from "./BackgroundMapDrape";
 import { CachedGeometry, SkyBoxQuadsGeometry, SkySphereViewportQuadGeometry } from "./CachedGeometry";
 import { ClipVolume } from "./ClipVolume";
@@ -38,7 +41,7 @@ import { DepthBuffer, FrameBufferStack } from "./FrameBuffer";
 import { GL } from "./GL";
 import { GLTimer } from "./GLTimer";
 import { Batch, Branch, Graphic, GraphicOwner, GraphicsArray } from "./Graphic";
-import { UniformHandle } from "./Handle";
+import { UniformHandle } from "./UniformHandle";
 import { Layer, LayerContainer } from "./Layer";
 import { LineCode } from "./LineCode";
 import { Material } from "./Material";
@@ -54,6 +57,7 @@ import { OffScreenTarget, OnScreenTarget } from "./Target";
 import { Techniques } from "./Technique";
 import { TerrainMeshGeometry } from "./TerrainMesh";
 import { Texture, TextureHandle } from "./Texture";
+import { createScreenSpaceEffectBuilder, ScreenSpaceEffects } from "./ScreenSpaceEffect";
 
 /* eslint-disable no-restricted-syntax */
 
@@ -142,19 +146,17 @@ class WebGL2Extensions extends WebGLExtensions {
  */
 export class IdMap implements WebGLDisposable {
   /** Mapping of materials by their key values. */
-  public readonly materials: Map<string, RenderMaterial>;
+  public readonly materials = new Map<string, RenderMaterial>();
   /** Mapping of textures by their key values. */
-  public readonly textures: Map<string, RenderTexture>;
+  public readonly textures = new Map<string, RenderTexture>();
   /** Mapping of textures using gradient symbology. */
-  public readonly gradients: Dictionary<Gradient.Symb, RenderTexture>;
-  /** Solar shadow map (one for IModel) */
-  public constructor() {
-    this.materials = new Map<string, RenderMaterial>();
-    this.textures = new Map<string, RenderTexture>();
-    this.gradients = new Dictionary<Gradient.Symb, RenderTexture>(Gradient.Symb.compareSymb);
-  }
+  public readonly gradients = new Dictionary<Gradient.Symb, RenderTexture>(Gradient.Symb.compareSymb);
+  /** Pending promises to create a texture from an ImageSource. This prevents us from decoding the same ImageSource multiple times */
+  public readonly texturesFromImageSources = new Map<string, Promise<RenderTexture | undefined>>();
 
-  public get isDisposed(): boolean { return 0 === this.textures.size && 0 === this.gradients.size; }
+  public get isDisposed(): boolean {
+    return 0 === this.textures.size && 0 === this.gradients.size;
+  }
 
   public dispose() {
     const textureArr = Array.from(this.textures.values());
@@ -233,6 +235,10 @@ export class IdMap implements WebGLDisposable {
     return this.createTexture(params, TextureHandle.createForCubeImages(posX, negX, posY, negY, posZ, negZ));
   }
 
+  private createTextureFromElement(id: Id64String, imodel: IModelConnection, params: RenderTexture.Params, format: ImageSourceFormat): RenderTexture | undefined {
+    return this.createTexture(params, TextureHandle.createForElement(id, imodel, params.type, format));
+  }
+
   public findTexture(key?: string): RenderTexture | undefined { return undefined !== key ? this.textures.get(key) : undefined; }
 
   /** Find or attempt to create a new texture using an ImageBuffer. If a new texture was created, it will be cached provided its key is valid. */
@@ -241,9 +247,50 @@ export class IdMap implements WebGLDisposable {
     return undefined !== tex ? tex : this.createTextureFromImageBuffer(img, params);
   }
 
+  public getTextureFromElement(id: Id64String, imodel: IModelConnection, params: RenderTexture.Params, format: ImageSourceFormat): RenderTexture | undefined {
+    const tex = this.findTexture(params.key);
+    return undefined !== tex ? tex : this.createTextureFromElement(id, imodel, params, format);
+  }
+
   public getTextureFromImage(image: HTMLImageElement, hasAlpha: boolean, params: RenderTexture.Params): RenderTexture | undefined {
     const tex = this.findTexture(params.key);
     return undefined !== tex ? tex : this.createTextureFromImage(image, hasAlpha, params);
+  }
+
+  public async getTextureFromImageSource(source: ImageSource, params: RenderTexture.Params): Promise<RenderTexture | undefined> {
+    // Do we already have this texture?
+    const texture = this.findTexture(params.key);
+    if (texture)
+      return Promise.resolve(texture);
+
+    // Are we already in the process of creating this texture?
+    let promise = params.key ? this.texturesFromImageSources.get(params.key) : undefined;
+    if (promise)
+      return promise;
+
+    promise = this.createTextureFromImageSource(source, params);
+    if (params.key) {
+      // Ensure subsequent requests for this texture that arrive before we finish creating it receive the same promise,
+      // instead of redundantly decoding the same image.
+      this.texturesFromImageSources.set(params.key, promise);
+    }
+
+    return promise;
+  }
+
+  public async createTextureFromImageSource(source: ImageSource, params: RenderTexture.Params): Promise<RenderTexture | undefined> {
+    try {
+      const image = await imageElementFromImageSource(source);
+      return IModelApp.hasRenderSystem ? this.getTextureFromImage(image, ImageSourceFormat.Png === source.format, params) : undefined;
+    } catch (_) {
+      // Caller is uninterested in the details of the exception.
+      return undefined;
+    } finally {
+      if (params.key) {
+        // The promise has resolved or rejected - remove from pending set.
+        this.texturesFromImageSources.delete(params.key);
+      }
+    }
   }
 
   public getTextureFromCubeImages(posX: HTMLImageElement, negX: HTMLImageElement, posY: HTMLImageElement, negY: HTMLImageElement, posZ: HTMLImageElement, negZ: HTMLImageElement, params: RenderTexture.Params): RenderTexture | undefined {
@@ -323,6 +370,7 @@ export class System extends RenderSystem implements RenderSystemDebugControl, Re
   private _lineCodeTexture?: TextureHandle;
   private _noiseTexture?: TextureHandle;
   private _techniques?: Techniques;
+  private _screenSpaceEffects?: ScreenSpaceEffects;
   public readonly debugShaderFiles: DebugShaderFile[] = [];
 
   public static get instance() { return IModelApp.renderSystem as System; }
@@ -330,7 +378,16 @@ export class System extends RenderSystem implements RenderSystemDebugControl, Re
   public get isValid(): boolean { return this.canvas !== undefined; }
   public get lineCodeTexture() { return this._lineCodeTexture; }
   public get noiseTexture() { return this._noiseTexture; }
-  public get techniques() { return this._techniques!; }
+
+  public get techniques() {
+    assert(undefined !== this._techniques);
+    return this._techniques;
+  }
+
+  public get screenSpaceEffects() {
+    assert(undefined !== this._screenSpaceEffects);
+    return this._screenSpaceEffects;
+  }
 
   public get maxTextureSize(): number { return this.capabilities.maxTextureSize; }
   public get supportsInstancing(): boolean { return this.capabilities.supportsInstancing; }
@@ -396,12 +453,14 @@ export class System extends RenderSystem implements RenderSystemDebugControl, Re
   public get isDisposed(): boolean {
     return undefined === this._techniques
       && undefined === this._lineCodeTexture
-      && undefined === this._noiseTexture;
+      && undefined === this._noiseTexture
+      && undefined === this._screenSpaceEffects;
   }
 
   // Note: FrameBuffers inside of the FrameBufferStack are not owned by the System, and are only used as a central storage device
   public dispose() {
     this._techniques = dispose(this._techniques);
+    this._screenSpaceEffects = dispose(this._screenSpaceEffects);
     this._lineCodeTexture = dispose(this._lineCodeTexture);
     this._noiseTexture = dispose(this._noiseTexture);
 
@@ -427,16 +486,30 @@ export class System extends RenderSystem implements RenderSystemDebugControl, Re
 
     this._lineCodeTexture = TextureHandle.createForData(LineCode.size, LineCode.count, new Uint8Array(LineCode.lineCodeData), false, GL.Texture.WrapMode.Repeat, GL.Texture.Format.Luminance);
     assert(undefined !== this._lineCodeTexture, "System.lineCodeTexture not created.");
+
+    this._screenSpaceEffects = new ScreenSpaceEffects();
   }
 
-  public createTarget(canvas: HTMLCanvasElement): RenderTarget { return new OnScreenTarget(canvas); }
-  public createOffscreenTarget(rect: ViewRect): RenderTarget { return new OffScreenTarget(rect); }
-  public createGraphicBuilder(placement: Transform, type: GraphicType, viewport: Viewport, pickableId?: Id64String): GraphicBuilder { return new PrimitiveBuilder(this, type, viewport, placement, pickableId); }
+  public createTarget(canvas: HTMLCanvasElement): RenderTarget {
+    return new OnScreenTarget(canvas);
+  }
 
-  public createMesh(params: MeshParams, instances?: InstancedGraphicParams | Point3d): RenderGraphic | undefined { return MeshGraphic.create(params, instances); }
+  public createOffscreenTarget(rect: ViewRect): RenderTarget {
+    return new OffScreenTarget(rect);
+  }
+
+  public createGraphicBuilder(placement: Transform, type: GraphicType, viewport: Viewport, pickableId?: Id64String): GraphicBuilder {
+    return new PrimitiveBuilder(this, type, viewport, placement, pickableId);
+  }
+
+  public createMesh(params: MeshParams, instances?: InstancedGraphicParams | Point3d): RenderGraphic | undefined {
+    return MeshGraphic.create(params, instances);
+  }
+
   public createTerrainMeshGeometry(terrainMesh: TerrainMeshPrimitive, transform: Transform): RenderTerrainMeshGeometry | undefined {
     return TerrainMeshGeometry.createGeometry(terrainMesh, transform);
   }
+
   public createTerrainMeshGraphic(terrainGeometry: RenderTerrainMeshGeometry, featureTable: PackedFeatureTable, tileId: string, baseColor: ColorDef | undefined, baseTransparent: boolean, textures?: TerrainTexture[]): RenderGraphic | undefined {
     return TerrainMeshGeometry.createGraphic(this, terrainGeometry as TerrainMeshGeometry, featureTable, tileId, baseColor, baseTransparent, textures);
   }
@@ -444,17 +517,26 @@ export class System extends RenderSystem implements RenderSystemDebugControl, Re
   public createPolyline(params: PolylineParams, instances?: InstancedGraphicParams | Point3d): RenderGraphic | undefined {
     return createPrimitive((viOrigin) => PolylineGeometry.create(params, viOrigin), instances);
   }
+
   public createPointString(params: PointStringParams, instances?: InstancedGraphicParams | Point3d): RenderGraphic | undefined {
     return createPrimitive((viOrigin) => PointStringGeometry.create(params, viOrigin), instances);
   }
-  public createPointCloud(args: PointCloudArgs): RenderGraphic | undefined { return Primitive.create(() => new PointCloudGeometry(args)); }
 
-  public createGraphicList(primitives: RenderGraphic[]): RenderGraphic { return new GraphicsArray(primitives); }
+  public createPointCloud(args: PointCloudArgs): RenderGraphic | undefined {
+    return Primitive.create(() => new PointCloudGeometry(args));
+  }
+
+  public createGraphicList(primitives: RenderGraphic[]): RenderGraphic {
+    return new GraphicsArray(primitives);
+  }
+
   public createGraphicBranch(branch: GraphicBranch, transform: Transform, options?: GraphicBranchOptions): RenderGraphic {
     return new Branch(branch, transform, undefined, options);
   }
 
-  public createBatch(graphic: RenderGraphic, features: PackedFeatureTable, range: ElementAlignedBox3d, tileId?: string): RenderGraphic { return new Batch(graphic, features, range, tileId); }
+  public createBatch(graphic: RenderGraphic, features: PackedFeatureTable, range: ElementAlignedBox3d, tileId?: string): RenderGraphic {
+    return new Batch(graphic, features, range, tileId);
+  }
 
   public createGraphicOwner(owned: RenderGraphic): RenderGraphicOwner {
     return new GraphicOwner(owned as Graphic);
@@ -463,6 +545,7 @@ export class System extends RenderSystem implements RenderSystemDebugControl, Re
   public createGraphicLayer(graphic: RenderGraphic, layerId: string) {
     return new Layer(graphic as Graphic, layerId);
   }
+
   public createGraphicLayerContainer(graphic: RenderGraphic, drawAsOverlay: boolean, transparency: number, elevation: number) {
     return new LayerContainer(graphic as Graphic, drawAsOverlay, transparency, elevation);
   }
@@ -474,6 +557,10 @@ export class System extends RenderSystem implements RenderSystemDebugControl, Re
       assert(undefined !== params.sphere || undefined !== params.gradient);
       return SkySpherePrimitive.create(() => SkySphereViewportQuadGeometry.createGeometry(params));
     }
+  }
+
+  public createScreenSpaceEffectBuilder(params: ScreenSpaceEffectBuilderParams): ScreenSpaceEffectBuilder {
+    return createScreenSpaceEffectBuilder(params);
   }
 
   public applyRenderState(newState: RenderState) {
@@ -549,6 +636,13 @@ export class System extends RenderSystem implements RenderSystemDebugControl, Re
     return this.getIdMap(imodel).getTexture(image, params);
   }
 
+  public async createTextureFromImageSource(source: ImageSource, imodel: IModelConnection | undefined, params: RenderTexture.Params): Promise<RenderTexture | undefined> {
+    if (!imodel)
+      return super.createTextureFromImageSource(source, imodel, params);
+
+    return this.getIdMap(imodel).getTextureFromImageSource(source, params);
+  }
+
   /** Attempt to create a texture for the given iModel using an HTML image element. */
   public createTextureFromImage(image: HTMLImageElement, hasAlpha: boolean, imodel: IModelConnection | undefined, params: RenderTexture.Params): RenderTexture | undefined {
     // if imodel is undefined, caller is responsible for disposing texture. It will not be associated with an IModelConnection
@@ -558,6 +652,10 @@ export class System extends RenderSystem implements RenderSystemDebugControl, Re
     }
 
     return this.getIdMap(imodel).getTextureFromImage(image, hasAlpha, params);
+  }
+
+  public createTextureFromElement(id: Id64String, imodel: IModelConnection, params: RenderTexture.Params, format: ImageSourceFormat): RenderTexture | undefined {
+    return this.getIdMap(imodel).getTextureFromElement(id, imodel, params, format);
   }
 
   /** Attempt to create a texture from a cube of HTML images. */
@@ -605,15 +703,11 @@ export class System extends RenderSystem implements RenderSystemDebugControl, Re
     // Make this System a subscriber to the the IModelConnection onClose event
     this._removeEventListener = IModelConnection.onClose.addListener((imodel) => this.removeIModelMap(imodel));
 
-    canvas.addEventListener("webglcontextlost", async () => this.handleContextLoss(), false);
+    canvas.addEventListener("webglcontextlost", async () => RenderSystem.contextLossHandler(), false);
   }
 
-  protected async handleContextLoss(): Promise<void> {
-    const msg = IModelApp.i18n.translate("iModelJs:Errors.WebGLContextLost");
-    return ToolAdmin.exceptionHandler(msg);
-  }
-
-  private getIdMap(imodel: IModelConnection): IdMap {
+  /** Exposed strictly for tests. */
+  public getIdMap(imodel: IModelConnection): IdMap {
     const map = this.resourceCache.get(imodel);
     return undefined !== map ? map : this.createIModelMap(imodel);
   }

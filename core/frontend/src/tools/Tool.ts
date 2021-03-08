@@ -332,6 +332,9 @@ export class Tool {
   /** The internationalization services instance used to translate strings from the namespace. */
   public static i18n: I18N;
 
+  /** @internal */
+  public get ctor() { return this.constructor as ToolType; }
+
   public constructor(..._args: any[]) { }
 
   /** The minimum number of arguments allowed by [[parseAndRun]]. If subclasses override [[parseAndRun]], they should also
@@ -402,27 +405,27 @@ export class Tool {
    * Get the toolId string for this Tool class. This string is used to identify the Tool in the ToolRegistry and is used to localize
    * the keyin, description, etc. from the current locale.
    */
-  public get toolId(): string { return (this.constructor as ToolType).toolId; }
+  public get toolId(): string { return this.ctor.toolId; }
 
   /** Get the localized keyin string from this Tool's class
    * @see `static get keyin()`
    */
-  public get keyin(): string { return (this.constructor as ToolType).keyin; }
+  public get keyin(): string { return this.ctor.keyin; }
 
   /** Get the localized flyover string from this Tool's class
    * @see `static get flyover()`
    */
-  public get flyover(): string { return (this.constructor as ToolType).flyover; }
+  public get flyover(): string { return this.ctor.flyover; }
 
   /** Get the localized description string from this Tool's class
    * @see `static get description()`
    */
-  public get description(): string { return (this.constructor as ToolType).description; }
+  public get description(): string { return this.ctor.description; }
 
   /** Get the iconSpec from this Tool's class.
    * @see `static iconSpec`
    */
-  public get iconSpec(): string { return (this.constructor as ToolType).iconSpec; }
+  public get iconSpec(): string { return this.ctor.iconSpec; }
 
   /**
    * Run this instance of a Tool. Subclasses should override to perform some action.
@@ -668,7 +671,7 @@ export abstract class InteractiveTool extends Tool {
     this.changeLocateState(enableLocate, enableSnap, cursor, coordLockOvr);
   }
 
-  /** Used to supply list of properties that can be used to generate ToolSettings. If undefined is returned then no ToolSettings will be displayed
+  /** Used to supply list of properties that can be used to generate ToolSettings. If undefined is returned then no ToolSettings will be displayed.
    * @beta
    */
   public supplyToolSettingsProperties(): DialogItem[] | undefined { return undefined; }
@@ -693,6 +696,13 @@ export abstract class InteractiveTool extends Tool {
   public reloadToolSettingsProperties() {
     IModelApp.toolAdmin.reloadToolSettingsProperties();
   }
+
+  /** Used to "bump" the value of a tool setting. To "bump" a setting means to toggle a boolean value or cycle through enum values.
+   * If no `settingIndex` param is specified, the first setting is bumped.
+   * Return true if the setting was successfully bumped.
+   * @beta
+   */
+  public async bumpToolSetting(_settingIndex?: number): Promise<boolean> { return false; }
 }
 
 /** The InputCollector class can be used to implement a command for gathering input (ex. get a distance by snapping to 2 points) without affecting the state of the active primitive tool.

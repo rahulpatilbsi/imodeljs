@@ -18,6 +18,13 @@ describe("<ColorPickerButton/>", () => {
   it("should render", () => {
     const renderedComponent = render(<ColorPickerButton initialColor={colorDef} />);
     expect(renderedComponent).not.to.be.undefined;
+    expect(renderedComponent.container.querySelector(".components-caret")).to.be.null;
+  });
+
+  it("should render with caret", () => {
+    const renderedComponent = render(<ColorPickerButton initialColor={colorDef} showCaret />);
+    expect(renderedComponent).not.to.be.undefined;
+    expect(renderedComponent.container.querySelector(".components-caret")).not.to.be.null;
   });
 
   it("should re-render properly when initial color prop changes", () => {
@@ -45,10 +52,12 @@ describe("<ColorPickerButton/>", () => {
       spyOnColorPick();
     }
 
-    const renderedComponent = render(<ColorPickerButton initialColor={colorDef} onColorPick={handleColorPick} dropDownTitle="test-title" />);
+    const renderedComponent = render(<ColorPickerButton initialColor={colorDef} onColorPick={handleColorPick} dropDownTitle="test-title" showCaret />);
     const button = renderedComponent.getByTestId("components-colorpicker-button");
     expect(button.getAttribute("data-value")).to.eq("rgb(0,0,255,1)");  // blue
+    expect(renderedComponent.container.querySelector(".icon-caret-down")).not.to.be.null;
     fireEvent.click(button);
+    expect(renderedComponent.container.querySelector(".icon-caret-up")).not.to.be.null;
 
     const popupDiv = await waitForElement(() => renderedComponent.getByTestId("components-colorpicker-popup-colors"));
     expect(popupDiv).not.to.be.undefined;

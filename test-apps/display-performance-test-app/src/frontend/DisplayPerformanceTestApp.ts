@@ -3,16 +3,17 @@
 * See LICENSE.md in the project root for license terms and full copyright notice.
 *--------------------------------------------------------------------------------------------*/
 import * as path from "path";
-import { ClientRequestContext, Id64, Id64Arg, Id64String, OpenMode, StopWatch } from "@bentley/bentleyjs-core";
+import { ClientRequestContext, Dictionary, Id64, Id64Arg, Id64String, OpenMode, ProcessDetector, SortedArray, StopWatch } from "@bentley/bentleyjs-core";
 import { Project } from "@bentley/context-registry-client";
+import { ElectronApp } from "@bentley/electron-manager/lib/ElectronFrontend";
 import {
   BrowserAuthorizationClient, BrowserAuthorizationClientConfiguration, FrontendAuthorizationClient,
 } from "@bentley/frontend-authorization-client";
 import { HubIModel } from "@bentley/imodelhub-client";
 import {
-  BackgroundMapProps, BackgroundMapType, BentleyCloudRpcManager, ColorDef, DesktopAuthorizationClientConfiguration, DisplayStyleProps, ElectronRpcConfiguration,
-  ElectronRpcManager, FeatureAppearance, FeatureAppearanceProps, Hilite, IModelReadRpcInterface, IModelTileRpcInterface, MobileRpcConfiguration, MobileRpcManager,
-  RenderMode, RpcConfiguration, SnapshotIModelRpcInterface, ViewDefinitionProps,
+  BackgroundMapProps, BackgroundMapType, BentleyCloudRpcManager, ColorDef, DesktopAuthorizationClientConfiguration, DisplayStyleProps,
+  FeatureAppearance, FeatureAppearanceProps, Hilite, IModelReadRpcInterface, IModelTileRpcInterface, RenderMode, RpcConfiguration,
+  SnapshotIModelRpcInterface, ViewDefinitionProps,
 } from "@bentley/imodeljs-common";
 import {
   AuthorizedFrontendRequestContext, DesktopAuthorizationClient, DisplayStyle3dState, DisplayStyleState, EntityState, FeatureOverrideProvider,
@@ -35,6 +36,8 @@ const testNamesImages = new Map<string, number>(); // Keep track of test names a
 const testNamesTimings = new Map<string, number>(); // Keep track of test names and how many duplicate names exist for timings
 const defaultHilite = new Hilite.Settings();
 const defaultEmphasis = new Hilite.Settings(ColorDef.black, 0, 0, Hilite.Silhouette.Thick);
+const rpcInterfaces = [DisplayPerfRpcInterface, IModelTileRpcInterface, SnapshotIModelRpcInterface, IModelReadRpcInterface];
+
 let minimize = false;
 interface Options {
   [key: string]: any; // Add index signature
@@ -68,12 +71,24 @@ function debugPrint(msg: string): void {
     console.log(msg); // eslint-disable-line no-console
 }
 
-async function resolveAfterXMilSeconds(ms: number) { // must call await before this function!!!
-  return new Promise((resolve) => {
+async function resolveAfterXMilSeconds(ms: number) {
+  return new Promise<void>((resolve) => {
     setTimeout(() => {
       resolve();
     }, ms);
   });
+}
+
+/**
+ * See https://stackoverflow.com/questions/26246601/wildcard-string-comparison-in-javascript
+ * Compare strToTest with a given rule containing a wildcard, and will return true if strToTest matches the given wildcard
+ * Make sure it is case-insensitive
+ */
+function matchRule(strToTest: string, rule: string) {
+  strToTest = strToTest.toLowerCase();
+  rule = rule.toLowerCase();
+  const escapeRegex = (str: string) => str.replace(/([.*+?^=!:${}()|\[\]\/\\])/g, "\\$1");
+  return new RegExp(`^${rule.split("*").map(escapeRegex).join(".*")}$`).test(strToTest);
 }
 
 function removeFilesFromDir(_startPath: string, _filter: string) {
@@ -119,10 +134,14 @@ function getBrowserName(userAgent: string) {
 }
 
 class DisplayPerfTestApp {
-  public static async startup(opts?: IModelAppOptions): Promise<void> {
-    opts = opts ? opts : {};
-    opts.i18n = { urlTemplate: "locales/en/{{ns}}.json" } as I18NOptions;
-    await IModelApp.startup(opts);
+  public static async startup(iModelApp?: IModelAppOptions): Promise<void> {
+    iModelApp = iModelApp ?? {};
+    iModelApp.i18n = { urlTemplate: "locales/en/{{ns}}.json" } as I18NOptions;
+    iModelApp.rpcInterfaces = rpcInterfaces;
+    if (ProcessDetector.isElectronAppFrontend)
+      await ElectronApp.startup({ iModelApp });
+    else
+      await IModelApp.startup(iModelApp);
     IModelApp.animationInterval = undefined;
   }
 }
@@ -375,6 +394,42 @@ function getViewFlagsString(): string {
   return vfString;
 }
 
+/* A formatted string containing the Ids of all the tiles that were selected for display by the last call to waitForTilesToLoad(), of the format:
+ *  Selected Tiles:
+ *    TreeId1: tileId1,tileId2,...
+ *    TreeId2: tileId1,tileId2,...
+ *    ...
+ * Sorted by tree Id and then by tile Id so that the output is consistent from run to run unless the set of selected tiles changed between runs.
+ */
+let formattedSelectedTileIds = "Selected tiles:\n";
+function formatSelectedTileIds(vp: Viewport): void {
+  formattedSelectedTileIds = "Selected tiles:\n";
+  const dict = new Dictionary<string, SortedArray<string>>((lhs, rhs) => lhs.localeCompare(rhs));
+  for (const viewport of [ vp, ...vp.view.secondaryViewports]) {
+    const selected = IModelApp.tileAdmin.getTilesForViewport(viewport)?.selected;
+    if (!selected)
+      continue;
+
+    for (const tile of selected) {
+      const treeId = tile.tree.id;
+      let tileIds = dict.get(treeId);
+      if (!tileIds)
+        dict.set(treeId, tileIds = new SortedArray<string>((lhs, rhs) => lhs.localeCompare(rhs)));
+
+      tileIds.insert(tile.contentId);
+    }
+  }
+
+  if (dict.size === 0)
+    return;
+
+  for (const kvp of dict) {
+    const contentIds = kvp.value.extractArray().join(",");
+    const line = `  ${kvp.key}: ${contentIds}`;
+    formattedSelectedTileIds = `${formattedSelectedTileIds}${line}\n`;
+  }
+}
+
 async function waitForTilesToLoad(modelLocation?: string) {
   if (modelLocation) {
     removeFilesFromDir(modelLocation, ".Tiles");
@@ -387,7 +442,7 @@ async function waitForTilesToLoad(modelLocation?: string) {
   const timer = new StopWatch(undefined, true);
   let haveNewTiles = true;
   while (haveNewTiles) {
-    theViewport!.setRedrawPending();
+    theViewport!.requestRedraw();
     theViewport!.invalidateScene();
     theViewport!.renderFrame();
 
@@ -397,6 +452,22 @@ async function waitForTilesToLoad(modelLocation?: string) {
     sceneContext.requestMissingTiles();
     haveNewTiles = !(activeViewState.viewState!.areAllTileTreesLoaded) || sceneContext.hasMissingTiles || 0 < sceneContext.missingTiles.size;
 
+    if (!haveNewTiles) {
+      // ViewAttachments and 3d section drawing attachments render to separate off-screen viewports. Check those too.
+      for (const secondaryVp of activeViewState.viewState!.secondaryViewports) {
+        if (secondaryVp.numRequestedTiles > 0) {
+          haveNewTiles = true;
+          break;
+        }
+
+        const secondaryTiles = IModelApp.tileAdmin.getTilesForViewport(secondaryVp);
+        if (secondaryTiles && secondaryTiles.external.requested > 0) {
+          haveNewTiles = true;
+          break;
+        }
+      }
+    }
+
     // NB: The viewport is NOT added to the ViewManager's render loop, therefore we must manually pump the tile request scheduler...
     if (haveNewTiles)
       IModelApp.tileAdmin.process();
@@ -405,10 +476,14 @@ async function waitForTilesToLoad(modelLocation?: string) {
 
     await resolveAfterXMilSeconds(100);
   }
+
   theViewport!.continuousRendering = false;
   theViewport!.renderFrame();
   timer.stop();
   curTileLoadingTime = timer.current.milliseconds;
+
+  // Record the Ids of all the tiles that were selected for display.
+  formatSelectedTileIds(theViewport!);
 }
 
 // ###TODO this should be using Viewport.devicePixelRatio.
@@ -538,7 +613,7 @@ function removeOptsFromString(input: string, ignore: string[] | string | undefin
 
 function getImageString(configs: DefaultConfigs, prefix = ""): string {
   const filename = `${getTestName(configs, prefix, true)}.png`;
-  if (MobileRpcConfiguration.isMobileFrontend)
+  if (ProcessDetector.isMobileAppFrontend)
     return filename; // skip path for mobile - we use device's Documents path as determined by mobile backend
   return path.join(configs.outputPath ? configs.outputPath : "", filename);
 }
@@ -614,6 +689,7 @@ class DefaultConfigs {
   public tileProps?: TileAdmin.Props;
   public hilite?: Hilite.Settings;
   public emphasis?: Hilite.Settings;
+  public savedViewType?: string;
 
   public constructor(jsonData: any, prevConfigs?: DefaultConfigs, useDefaults = false) {
     if (useDefaults) {
@@ -621,13 +697,14 @@ class DefaultConfigs {
       this.numRendersToTime = 100;
       this.numRendersToSkip = 50;
       this.outputName = "performanceResults.csv";
-      this.outputPath = MobileRpcConfiguration.isMobileFrontend ? undefined : "D:\\output\\performanceData\\";
+      this.outputPath = ProcessDetector.isMobileAppFrontend ? undefined : "D:\\output\\performanceData\\";
       this.iModelName = "TimingTest_General.bim";
       this.iModelHubProject = "iModel Testing";
-      this.viewName = "V0";
+      this.viewName = "*"; // If no view is specified, test all views
       this.testType = "timing";
       this.csvFormat = "original";
       this.renderOptions = { useWebGL2: true, dpiAwareLOD: true };
+      this.savedViewType = "both";
     }
     if (prevConfigs !== undefined) {
       if (prevConfigs.view) this.view = new ViewSize(prevConfigs.view.width, prevConfigs.view.height);
@@ -643,6 +720,7 @@ class DefaultConfigs {
       if (prevConfigs.viewName) this.viewName = prevConfigs.viewName;
       if (prevConfigs.viewStatePropsString) this.viewStatePropsString = prevConfigs.viewStatePropsString;
       if (prevConfigs.testType) this.testType = prevConfigs.testType;
+      if (prevConfigs.savedViewType) this.savedViewType = prevConfigs.savedViewType;
       if (prevConfigs.displayStyle) this.displayStyle = prevConfigs.displayStyle;
       this.renderOptions = this.updateData(prevConfigs.renderOptions, this.renderOptions) as RenderSystem.Options || undefined;
       this.tileProps = this.updateData(prevConfigs.tileProps, this.tileProps) as TileAdmin.Props || undefined;
@@ -668,6 +746,7 @@ class DefaultConfigs {
       this.viewName = jsonData.viewName;
     if (jsonData.extViewName)
       this.viewName = jsonData.extViewName;
+    if (jsonData.savedViewType) this.savedViewType = jsonData.savedViewType;
     if (jsonData.viewString) {
       // If there is a viewString, put its name in the viewName property so that it gets used in the filename, etc.
       this.viewName = jsonData.viewString._name;
@@ -745,6 +824,7 @@ class DefaultConfigs {
     debugPrint(`renderOptions: ${this.renderOptions}`);
     debugPrint(`viewFlags: ${this.viewFlags}`);
     debugPrint(`backgroundMap: ${this.backgroundMap}`);
+    debugPrint(`savedViewType: ${this.savedViewType}`);
   }
 
   private getRenderModeCode(value: any): RenderMode | undefined {
@@ -899,18 +979,18 @@ async function openView(state: SimpleViewState, viewSize: ViewSize) {
   if (vpDiv) {
     // We must make sure we test the exact same number of pixels regardless of the device pixel ratio
     const pixelRatio = queryDevicePixelRatio();
-    viewSize.width /= pixelRatio;
-    viewSize.height /= pixelRatio;
+    const width = viewSize.width / pixelRatio;
+    const height = viewSize.height / pixelRatio;
 
-    vpDiv.style.width = `${String(viewSize.width)}px`;
-    vpDiv.style.height = `${String(viewSize.height)}px`;
+    vpDiv.style.width = `${String(width)}px`;
+    vpDiv.style.height = `${String(height)}px`;
     theViewport = ScreenViewport.create(vpDiv, state.viewState!);
     theViewport.rendersToScreen = true;
     const canvas = theViewport.canvas;
-    canvas.style.width = `${String(viewSize.width)}px`;
-    canvas.style.height = `${String(viewSize.height)}px`;
+    canvas.style.width = `${String(width)}px`;
+    canvas.style.height = `${String(height)}px`;
     theViewport.continuousRendering = false;
-    theViewport.setRedrawPending();
+    theViewport.requestRedraw();
     (theViewport.target as Target).performanceMetrics = undefined;
     await _changeView(state.viewState!);
   }
@@ -919,7 +999,7 @@ async function openView(state: SimpleViewState, viewSize: ViewSize) {
 async function createOidcClient(requestContext: ClientRequestContext): Promise<FrontendAuthorizationClient> {
   const scope = "openid email profile organization imodelhub context-registry-service:read-only reality-data:read product-settings-service projectwise-share urlps-third-party";
 
-  if (ElectronRpcConfiguration.isElectron) {
+  if (ProcessDetector.isElectronAppFrontend) {
     const clientId = "imodeljs-electron-test";
     const redirectUri = "http://localhost:3000/signin-callback";
     const oidcConfiguration: DesktopAuthorizationClientConfiguration = { clientId, redirectUri, scope: `${scope} offline_access` };
@@ -961,12 +1041,31 @@ async function signIn(): Promise<boolean> {
   return retPromise;
 }
 
-async function loadIModel(testConfig: DefaultConfigs): Promise<boolean> {
+async function getAllMatchingSavedViews(testConfig: DefaultConfigs): Promise<string[]> {
+  const intViews: string[] = [];
+  const extViews: string[] = [];
+
+  await openImodelAndLoadExtViews(testConfig); // Open iModel & load all external saved views into activeViewState
+
+  if (testConfig.savedViewType?.toLocaleLowerCase() !== "external") { // Get both public & private internal/local saved views
+    if (activeViewState.iModelConnection) {
+      const viewSpecs = await activeViewState.iModelConnection.views.getViewList({ wantPrivate: true });
+      viewSpecs.forEach((spec) => intViews.push(spec.name));
+    }
+  }
+  if (testConfig.savedViewType?.toLocaleLowerCase() !== "internal" && testConfig.savedViewType?.toLocaleLowerCase() !== "local") {  // Open external saved views
+    activeViewState.externalSavedViews?.forEach((view) => extViews.push(view._name));
+  }
+
+  const allViews = intViews.concat(extViews);
+  return allViews.filter((view) => matchRule(view, testConfig.viewName ?? "*")).sort(); // Filter & alphabetize all view names
+}
+
+async function openImodelAndLoadExtViews(testConfig: DefaultConfigs, extViews?: any[]): Promise<void> {
   activeViewState = new SimpleViewState();
-  activeViewState.viewState; // eslint-disable-line @typescript-eslint/no-unused-expressions
 
   // Open an iModel from a local file
-  let openLocalIModel = (testConfig.iModelLocation !== undefined) || MobileRpcConfiguration.isMobileFrontend;
+  let openLocalIModel = (testConfig.iModelLocation !== undefined) || ProcessDetector.isMobileAppFrontend;
   if (openLocalIModel) {
     try {
       activeViewState.iModelConnection = await SnapshotConnection.openFile(testConfig.iModelFile!);
@@ -974,17 +1073,21 @@ async function loadIModel(testConfig: DefaultConfigs): Promise<boolean> {
       alert(`openSnapshot failed: ${err.toString()}`);
       openLocalIModel = false;
     }
-    const esvString = await DisplayPerfRpcInterface.getClient().readExternalSavedViews(testConfig.iModelFile!);
-    if (undefined !== esvString && "" !== esvString) {
-      activeViewState.externalSavedViews = JSON.parse(esvString) as any[];
+    if (extViews) {
+      activeViewState.externalSavedViews = extViews;
+    } else {
+      const esvString = await DisplayPerfRpcInterface.getClient().readExternalSavedViews(testConfig.iModelFile!);
+      if (undefined !== esvString && "" !== esvString) {
+        activeViewState.externalSavedViews = JSON.parse(esvString) as any[];
+      }
     }
   }
 
   // Open an iModel from iModelHub
-  if (!openLocalIModel && testConfig.iModelHubProject !== undefined && !MobileRpcConfiguration.isMobileFrontend) {
+  if (!openLocalIModel && testConfig.iModelHubProject !== undefined && !ProcessDetector.isMobileAppFrontend) {
     const signedIn: boolean = await signIn();
     if (!signedIn)
-      return false;
+      return;
 
     const requestContext = await AuthorizedFrontendRequestContext.create();
     requestContext.enter();
@@ -997,7 +1100,9 @@ async function loadIModel(testConfig: DefaultConfigs): Promise<boolean> {
       throw new Error(`${activeViewState.projectConfig.iModelName} - IModel not found in project ${activeViewState.project!.name}`);
     activeViewState.iModelConnection = await IModelApi.openIModel(activeViewState.project!.wsgId, activeViewState.iModel.wsgId, undefined, OpenMode.Readonly);
 
-    if (activeViewState.project) { // Get any external saved views from iModelHub if they exist
+    if (extViews) {
+      activeViewState.externalSavedViews = extViews;
+    } else if (activeViewState.project) { // Get any external saved views from iModelHub if they exist
       try {
         const projectShareClient: ProjectShareClient = new ProjectShareClient();
         const projectId = activeViewState.project.wsgId;
@@ -1030,9 +1135,13 @@ async function loadIModel(testConfig: DefaultConfigs): Promise<boolean> {
       } catch (error) {
         // Couldn't access the project share files
       }
-
     }
   }
+
+}
+
+async function loadIModel(testConfig: DefaultConfigs, extViews?: any[]): Promise<boolean> {
+  await openImodelAndLoadExtViews(testConfig, extViews); // Open iModel & load all external saved views into activeViewState
 
   // open the specified view
   if (undefined !== testConfig.viewStatePropsString)
@@ -1159,7 +1268,7 @@ async function restartIModelApp(testConfig: DefaultConfigs): Promise<void> {
   if (!IModelApp.initialized) {
     await DisplayPerfTestApp.startup({
       renderSys: testConfig.renderOptions,
-      tileAdmin: TileAdmin.create(curTileProps),
+      tileAdmin: curTileProps,
     });
   }
 }
@@ -1303,19 +1412,22 @@ async function renderAsync(vp: ScreenViewport, numFrames: number, timings: Array
         debugControl.resultsCallback = undefined; // Turn off glTimer metrics
         resolve();
       } else {
-        vp.setRedrawPending();
+        vp.requestRedraw();
         timer.start();
       }
     });
   });
 }
 
-async function runTest(testConfig: DefaultConfigs) {
+async function runTest(testConfig: DefaultConfigs, extViews?: any[]) {
   // Restart the IModelApp if needed
   await restartIModelApp(testConfig);
 
+  // Reset the title bar to include the current model and view name
+  document.title = "Display Performance Test App:  ".concat(testConfig.iModelName ?? "", "  [", testConfig.viewName ?? "", "]");
+
   // Open and finish loading model
-  const loaded = await loadIModel(testConfig);
+  const loaded = await loadIModel(testConfig, extViews);
   if (!loaded) {
     await closeIModel();
     return; // could not properly open the given model or saved view so skip test
@@ -1337,7 +1449,7 @@ async function runTest(testConfig: DefaultConfigs) {
 
   // Throw away the first n renderFrame times, until it's more consistent
   for (let i = 0; i < (testConfig.numRendersToSkip ? testConfig.numRendersToSkip : 50); ++i) {
-    theViewport!.setRedrawPending();
+    theViewport!.requestRedraw();
     theViewport!.renderFrame();
   }
   testConfig.numRendersToTime = testConfig.numRendersToTime ? testConfig.numRendersToTime : 100;
@@ -1350,7 +1462,7 @@ async function runTest(testConfig: DefaultConfigs) {
     if (gpuFramesCollected < testConfig.numRendersToTime!) {
       const label = result.label;
       const timings = finalGPUFrameTimings.get(label);
-      finalGPUFrameTimings.set(label, timings ? timings.concat(result.nanoseconds / 1e6) : [result.nanoseconds / 1e6]); // Save as miliseconds
+      finalGPUFrameTimings.set(label, timings ? timings.concat(result.nanoseconds / 1e6) : [result.nanoseconds / 1e6]); // Save as milliseconds
       if (result.children) {
         for (const kid of result.children)
           gpuResultsCallback(kid);
@@ -1493,19 +1605,33 @@ async function testModel(configs: DefaultConfigs, modelData: any, logFileName: s
     // if (!fs.existsSync(testConfig.iModelFile!))
     //   break;
 
-    // write output log file of timestamp, current model, and view
-    const today = new Date();
-    const month = (`0${(today.getMonth() + 1)}`).slice(-2);
-    const day = (`0${today.getDate()}`).slice(-2);
-    const year = today.getFullYear();
-    const hours = (`0${today.getHours()}`).slice(-2);
-    const minutes = (`0${today.getMinutes()}`).slice(-2);
-    const seconds = (`0${today.getSeconds()}`).slice(-2);
-    const outStr = `${year}-${month}-${day} ${hours}:${minutes}:${seconds}  ${testConfig.iModelName!}  [${testConfig.viewName}]`;
-    await consoleLog(outStr);
-    await writeExternalFile(testConfig.outputPath!, logFileName, true, `${outStr}\n`);
+    // If a viewName contains an asterisk *,
+    // treat it as a wildcard and run tests for each saved view that matches the given wildcard
+    let allSavedViews = [testConfig.viewName];
+    let extViews: any[] | undefined;
+    if (testConfig.viewName?.includes("*")) {
+      allSavedViews = await getAllMatchingSavedViews(testConfig);
+      extViews = activeViewState.externalSavedViews;
+    }
+    for (const viewName of allSavedViews) {
+      testConfig.viewName = viewName;
 
-    await runTest(testConfig);
+      // write output log file of timestamp, current model, and view
+      const today = new Date();
+      const month = (`0${(today.getMonth() + 1)}`).slice(-2);
+      const day = (`0${today.getDate()}`).slice(-2);
+      const year = today.getFullYear();
+      const hours = (`0${today.getHours()}`).slice(-2);
+      const minutes = (`0${today.getMinutes()}`).slice(-2);
+      const seconds = (`0${today.getSeconds()}`).slice(-2);
+      const outStr = `${year}-${month}-${day} ${hours}:${minutes}:${seconds}  ${testConfig.iModelName!}  [${testConfig.viewName}]`;
+      await consoleLog(outStr);
+      await writeExternalFile(testConfig.outputPath!, logFileName, true, `${outStr}\n`);
+
+      await runTest(testConfig, extViews);
+
+      await writeExternalFile(testConfig.outputPath!, logFileName, true, formattedSelectedTileIds);
+    }
   }
   if (configs.iModelLocation) removeFilesFromDir(configs.iModelLocation, ".Tiles");
   if (configs.iModelLocation) removeFilesFromDir(configs.iModelLocation, ".TileCache");
@@ -1564,17 +1690,13 @@ async function main() {
 window.onload = async () => {
   // Choose RpcConfiguration based on whether we are in electron or browser
   RpcConfiguration.developmentMode = true;
-  if (ElectronRpcConfiguration.isElectron) {
-    ElectronRpcManager.initializeClient({}, [DisplayPerfRpcInterface, IModelTileRpcInterface, SnapshotIModelRpcInterface, IModelReadRpcInterface]);
-  } else if (MobileRpcConfiguration.isMobileFrontend) {
-    MobileRpcManager.initializeClient([DisplayPerfRpcInterface, IModelTileRpcInterface, SnapshotIModelRpcInterface, IModelReadRpcInterface]);
-  } else {
+  RpcConfiguration.disableRoutingValidation = true;
+
+  if (!ProcessDetector.isElectronAppFrontend && !ProcessDetector.isMobileAppFrontend) {
     const uriPrefix = "http://localhost:3001";
     BentleyCloudRpcManager.initializeClient({ info: { title: "DisplayPerformanceTestApp", version: "v1.0" }, uriPrefix }, [DisplayPerfRpcInterface, IModelTileRpcInterface, SnapshotIModelRpcInterface, IModelReadRpcInterface]);
   }
 
-  // ###TODO: Raman added one-time initialization logic IModelApp.startup which replaces a couple of RpcRequest-related functions.
-  // Cheap hacky workaround until that's fixed.
   await DisplayPerfTestApp.startup();
 
   await main();

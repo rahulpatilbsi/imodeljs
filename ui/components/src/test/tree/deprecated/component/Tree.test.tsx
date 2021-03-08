@@ -27,6 +27,7 @@ import { TreeComponentTestId } from "../../../../ui-components/tree/TreeComponen
 import { ResolvablePromise, waitForUpdate } from "../../../test-helpers/misc";
 import TestUtils from "../../../TestUtils";
 import { TestTreeDataProvider } from "../../TestDataFactories";
+import { PropertyValueRendererManager } from "../../../../ui-components/properties/ValueRendererManager";
 
 /* eslint-disable deprecation/deprecation */
 
@@ -141,6 +142,7 @@ describe("Tree", () => {
         onNodesSelected: nodesSelectedCallbackMock.object,
         onNodesDeselected: nodesDeselectedCallbackMock.object,
         selectionMode: SelectionMode.SingleAllowDeselect,
+        propertyValueRendererManager: PropertyValueRendererManager.defaultManager,
       };
     });
 
@@ -1661,20 +1663,6 @@ describe("Tree", () => {
       }, renderSpy, 1);
       expect(renderedTree.getAllByTestId(TreeComponentTestId.Node as any).length).to.eq(4);
       expect(getFlatList()).to.deep.eq(["1", "0", "0-b", "0-a"]);
-    });
-
-    it("handles case when `onTreeNodeChanged` is broadcasted with invalid node", async () => {
-      await waitForUpdate(() => {
-        renderedTree = render(<Tree {...defaultProps} dataProvider={interfaceProvider} />);
-      }, renderSpy, 2);
-      expect(renderedTree.getAllByTestId(TreeComponentTestId.Node as any).length).to.eq(4);
-
-      const node: TreeNodeItem = {
-        id: "test",
-        label: PropertyRecord.fromString("test"),
-      };
-      interfaceProvider.onTreeNodeChanged?.raiseEvent(node);
-      expect(renderedTree.getAllByTestId(TreeComponentTestId.Node as any).length).to.eq(4);
     });
 
     it("subscribes to `onTreeNodeChanged` on mount", () => {

@@ -21,8 +21,11 @@ import { StandardViewId } from "./StandardView";
 import { BeButton, BeButtonEvent, CoordinateLockOverrides, InputCollector, InputSource } from "./tools/Tool";
 import { ViewTool } from "./tools/ViewTool";
 import { DecorateContext } from "./ViewContext";
-import { linePlaneIntersect, ScreenViewport, Viewport } from "./Viewport";
+import { linePlaneIntersect } from "./LinePlaneIntersect";
+import { ScreenViewport, Viewport } from "./Viewport";
 import { ViewState } from "./ViewState";
+import { QuantityType } from "./QuantityFormatter";
+import { ParseError, Parser, QuantityParseResult } from "@bentley/imodeljs-quantity";
 
 // cspell:ignore dont primitivetools
 
@@ -465,6 +468,9 @@ export class AccuDraw {
 
     if (0.0 !== pointActive.z && !vp.isPointAdjustmentRequired)
       pointActive.z = 0.0;
+
+    if (1.0 !== vp.view.getAspectRatioSkew())
+      this.downgradeInactiveState(); // Disable AccuDraw if skew is applied with AccuDraw already active...
 
     if (this.isInactive) {
       this.point.setFrom(pointActive);
@@ -926,15 +932,23 @@ export class AccuDraw {
     rMatrix.multiplyTransposeVector(this.vector);
   }
 
-  private stringToUORs(_uors: number[], _str: string): BentleyStatus {
-    return BentleyStatus.SUCCESS;
+  private stringToDistance(str: string): QuantityParseResult {
+    const parserSpec = IModelApp.quantityFormatter.findParserSpecByQuantityType(QuantityType.Length);
+    if(parserSpec)
+      return parserSpec.parseToQuantityValue(str);
+    return {ok: false, error: ParseError.InvalidParserSpec};
   }
 
-  private stringToAngle(_angle: number[], _out: { isBearing: boolean }, _inString: string, _restrict: boolean): BentleyStatus {
-    return BentleyStatus.SUCCESS;
+  private stringToAngle(inString: string): QuantityParseResult {
+    // Need to update once there is an official "Bearing" QuantityType. Once available then
+    // use QuantityType.Angle for isBearing=false and "Bearing" for isBearing=true.
+    const parserSpec = IModelApp.quantityFormatter.findParserSpecByQuantityType(QuantityType.Angle);
+    if (parserSpec)
+      return parserSpec.parseToQuantityValue(inString);
+    return {ok: false, error: ParseError.InvalidParserSpec};
   }
 
-  private updateFieldValue(index: ItemField, input: string, out: { isBearing: boolean }): BentleyStatus {
+  private updateFieldValue(index: ItemField, input: string, _out: { isBearing: boolean }): BentleyStatus {
     if (input.length === 0)
       return BentleyStatus.ERROR;
 
@@ -947,43 +961,60 @@ export class AccuDraw {
           return BentleyStatus.ERROR;
       }
 
+    let parseResult;
+
     switch (index) {
       case ItemField.DIST_Item:
-        if (BentleyStatus.SUCCESS !== this.stringToUORs([this._distance], input))
-          return BentleyStatus.ERROR;
-        break;
+        parseResult = this.stringToDistance(input);
+        if (Parser.isParsedQuantity(parseResult)) {
+          this._distance = parseResult.value;
+          break;
+        }
+        return BentleyStatus.ERROR;
 
       case ItemField.ANGLE_Item:
-        if (BentleyStatus.SUCCESS !== this.stringToAngle([this._angle], out, input, true))
-          return BentleyStatus.ERROR;
-        break;
+        parseResult =this.stringToAngle(input);
+        if (Parser.isParsedQuantity(parseResult)) {
+          this._angle = parseResult.value;
+          break;
+        }
+        return BentleyStatus.ERROR;
 
       case ItemField.X_Item:
-        if (BentleyStatus.SUCCESS !== this.stringToUORs([this.delta.x], input))
-          return BentleyStatus.ERROR;
+        parseResult = this.stringToDistance(input);
+        if (Parser.isParsedQuantity(parseResult)) {
+          this.delta.x = parseResult.value;
 
-        this._xIsExplicit = (input[0] === "+" || input[0] === "-");
-        if (!this._xIsExplicit) {
-          if (this.smartKeyin && this.isActive && this._xIsNegative === (this.delta.x >= 0.0))
-            this.delta.x = -this.delta.x;
+          this._xIsExplicit = (input[0] === "+" || input[0] === "-");
+          if (!this._xIsExplicit) {
+            if (this.smartKeyin && this.isActive && this._xIsNegative === (this.delta.x >= 0.0))
+              this.delta.x = -this.delta.x;
+          }
+          break;
         }
-        break;
+        return BentleyStatus.ERROR;
 
       case ItemField.Y_Item:
-        if (BentleyStatus.SUCCESS !== this.stringToUORs([this.delta.y], input))
-          return BentleyStatus.ERROR;
+        parseResult = this.stringToDistance(input);
+        if (Parser.isParsedQuantity(parseResult)) {
+          this.delta.y = parseResult.value;
 
-        this._yIsExplicit = (input[0] === "+" || input[0] === "-");
-        if (!this._yIsExplicit) {
-          if (this.smartKeyin && this.isActive && this._yIsNegative === (this.delta.y >= 0.0))
-            this.delta.y = -this.delta.y;
+          this._yIsExplicit = (input[0] === "+" || input[0] === "-");
+          if (!this._yIsExplicit) {
+            if (this.smartKeyin && this.isActive && this._yIsNegative === (this.delta.y >= 0.0))
+              this.delta.y = -this.delta.y;
+          }
+          break;
         }
-        break;
+        return BentleyStatus.ERROR;
 
       case ItemField.Z_Item:
-        if (BentleyStatus.SUCCESS !== this.stringToUORs([this.delta.z], input))
-          return BentleyStatus.ERROR;
-        break;
+        parseResult = this.stringToDistance(input);
+        if (Parser.isParsedQuantity(parseResult)) {
+          this.delta.z = parseResult.value;
+          break;
+        }
+        return BentleyStatus.ERROR;
     }
 
     return BentleyStatus.SUCCESS;
@@ -1691,8 +1722,7 @@ export class AccuDraw {
     const rMatrix = (!this.flags.animateRotation || 0.0 === this._percentChanged) ? this.axes.toMatrix3d() : this.lastAxes.toMatrix3d();
     const origin = new Point3d(); // Compass origin is adjusted by active z-lock...
     this.getCompassPlanePoint(origin, vp);
-    // NOTE: AccuDraw should probably be disabled for exaggerated views, for now put a limit on compass y scale...
-    const scale = vp.pixelsFromInches(this._compassSizeInches / vp.view.getAspectRatioSkew()) * vp.getPixelSizeAtPoint(origin);
+    const scale = vp.pixelsFromInches(this._compassSizeInches) * vp.getPixelSizeAtPoint(origin);
 
     rMatrix.transposeInPlace();
     rMatrix.scaleColumns(scale, scale, scale, rMatrix);
@@ -2654,8 +2684,8 @@ export class AccuDraw {
       return false;
 
     const vp = this.currentView;
-    if (!vp)
-      return false;
+    if (!vp || 1.0 !== vp.view.getAspectRatioSkew())
+      return false; // Disallow AccuDraw being enabled for exaggerated views...
 
     // NOTE: If ACS Plane lock setup initial and base rotation to ACS...
     if (vp && AccuDraw.useACSContextRotation(vp, false)) {

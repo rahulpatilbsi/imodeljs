@@ -19,7 +19,7 @@ import { DrawParams, ShaderProgramParams } from "./DrawCommand";
 import { LineCode } from "./LineCode";
 import { fromSumOf, FrustumUniformType } from "./FrustumUniforms";
 import { GL } from "./GL";
-import { BufferHandle, BufferParameters, BuffersContainer, QBufferHandle2d, QBufferHandle3d } from "./Handle";
+import { BufferHandle, BufferParameters, BuffersContainer, QBufferHandle2d, QBufferHandle3d } from "./AttributeBuffers";
 import { InstancedGeometry } from "./InstancedGeometry";
 import { MaterialInfo } from "./Material";
 import { EdgeGeometry, MeshGeometry, SilhouetteEdgeGeometry, SurfaceGeometry } from "./Mesh";
@@ -494,7 +494,7 @@ export class ViewportQuadGeometry extends IndexedGeometry {
   }
   public static create(techniqueId: TechniqueId) {
     const params = ViewportQuad.getInstance().createParams();
-    return undefined !== params ? new ViewportQuadGeometry(params, techniqueId) : undefined;
+    return undefined !== params ? new this(params, techniqueId) : undefined;
   }
 
   public get techniqueId(): TechniqueId { return this._techniqueId; }
@@ -519,6 +519,14 @@ export class TexturedViewportQuadGeometry extends ViewportQuadGeometry {
     // TypeScript compiler will happily accept TextureHandle (or any other type) in place of WebGLTexture.
     // There is no such 'type' as WebGLTexture at run-time.
     assert(this._textures.every((tx) => !(tx instanceof TextureHandle)));
+  }
+
+  public static createTexturedViewportQuadGeometry(techniqueId: TechniqueId, textures: WebGLTexture[]): TexturedViewportQuadGeometry | undefined {
+    const params = ViewportQuad.getInstance().createParams();
+    if (undefined === params)
+      return undefined;
+
+    return new this(params, techniqueId, textures);
   }
 }
 
@@ -853,6 +861,25 @@ export class CombineTexturesGeometry extends TexturedViewportQuadGeometry {
 
   private constructor(params: IndexedGeometryParams, textures: WebGLTexture[]) {
     super(params, TechniqueId.CombineTextures, textures);
+  }
+}
+
+export class Combine3TexturesGeometry extends TexturedViewportQuadGeometry {
+  public static createGeometry(texture0: WebGLTexture, texture1: WebGLTexture, texture2: WebGLTexture) {
+    const params = ViewportQuad.getInstance().createParams();
+    if (undefined !== params) {
+      return new Combine3TexturesGeometry(params, [texture0, texture1, texture2]);
+    } else {
+      return undefined;
+    }
+  }
+
+  public get texture0() { return this._textures[0]; }
+  public get texture1() { return this._textures[1]; }
+  public get texture2() { return this._textures[2]; }
+
+  private constructor(params: IndexedGeometryParams, textures: WebGLTexture[]) {
+    super(params, TechniqueId.Combine3Textures, textures);
   }
 }
 

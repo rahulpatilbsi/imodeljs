@@ -18,7 +18,8 @@ public;ClassId = Id64String
 public;ClassInfo
 public;ClassInfo
 public;ClassInfoJSON
-public;ComputeDisplayValueCallback = (type: string, value: string | number | boolean |
+internal;CommonIpcParams
+public;ComputeDisplayValueCallback = (type: string, value: PrimitivePropertyValue, displayValue: string) => Promise
 public;ConditionContainer
 public;Content
 beta;ContentDescriptorRequestOptions
@@ -104,6 +105,9 @@ public;GroupingRule
 public;GroupingSpecification = ClassGroup | PropertyGroup | SameLabelInstanceGroup
 public;GroupingSpecificationBase
 public;GroupingSpecificationTypes
+alpha;HierarchyCompareInfo
+alpha;HierarchyCompareInfo
+alpha;HierarchyCompareInfoJSON
 public;HierarchyRequestOptions
 public;HierarchyRpcRequestOptions = PresentationRpcRequestOptions
 alpha;HierarchyUpdateInfo = typeof UPDATE_FULL | PartialHierarchyModification[]
@@ -198,14 +202,17 @@ alpha;PartialHierarchyModification = NodeInsertionInfo | NodeDeletionInfo | Node
 alpha;PartialHierarchyModification
 alpha;PartialHierarchyModificationJSON = NodeInsertionInfoJSON | NodeDeletionInfoJSON | NodeUpdateInfoJSON
 internal;PRESENTATION_COMMON_ROOT: string
+internal;PRESENTATION_IPC_CHANNEL_NAME = "presentation-ipc-interface"
 alpha;PresentationDataCompareOptions
 alpha;PresentationDataCompareRpcOptions = PresentationRpcRequestOptions
 public;PresentationError 
-alpha;PresentationRpcEvents
+alpha;PresentationIpcEvents
+internal;PresentationIpcInterface
 public;PresentationRpcInterface 
 public;PresentationRpcRequestOptions
 public;PresentationStatus
 alpha;PresentationUnitSystem
+public;PrimitivePropertyValue = string | number | boolean | Point | InstanceKey | undefined
 public;PrimitiveTypeDescription 
 public;PropertiesField 
 beta;PropertiesFieldDescriptor 
@@ -270,6 +277,7 @@ public;RuleBase
 public;Ruleset
 public;RulesetsFactory
 public;RulesetVariable
+public;RulesetVariableJSON
 public;RuleTypes
 public;SameLabelInstanceGroup 
 public;SameLabelInstanceGroupApplicationStage
@@ -282,6 +290,7 @@ public;SelectionInfo
 public;SelectionScope
 public;SelectionScopeRequestOptions
 public;SelectionScopeRpcRequestOptions = PresentationRpcRequestOptions
+internal;SetRulesetVariableParams
 public;SingleSchemaClassSpecification
 public;SortDirection
 public;SortingRule = PropertySortingRule | DisabledSortingRule
@@ -298,6 +307,7 @@ public;Subtract
 public;SupplementationInfo
 public;TypeDescription = PrimitiveTypeDescription | ArrayTypeDescription | StructTypeDescription
 alpha;UPDATE_FULL = "FULL"
+internal;UpdateHierarchyStateParams
 alpha;UpdateInfo
 alpha;UpdateInfo
 alpha;UpdateInfoJSON

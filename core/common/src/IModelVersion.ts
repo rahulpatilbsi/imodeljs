@@ -11,6 +11,15 @@ import { ChangeSet, ChangeSetQuery, IModelClient, VersionQuery } from "@bentley/
 import { AuthorizedClientRequestContext } from "@bentley/itwin-client";
 import { IModelError } from "./IModelError";
 
+/** Properties for IModelVersion
+ * @public
+ */
+export type IModelVersionProps =
+  { first: true, latest?: never, afterChangeSetId?: never, versionName?: never } |
+  { latest: true, first?: never, afterChangeSetId?: never, versionName?: never } |
+  { afterChangeSetId: GuidString, first?: never, latest?: never, versionName?: never } |
+  { versionName: string, first?: never, latest?: never, afterChangeSetId?: never };
+
 /** Option to specify the version of the iModel to be acquired and used
  * @public
  */
@@ -62,7 +71,26 @@ export class IModelVersion {
     return version;
   }
 
-  /** Creates a version from an untyped JSON object */
+  public toJSON(): IModelVersionProps {
+    return this._versionName ? { versionName: this._versionName } :
+      this._afterChangeSetId ? { afterChangeSetId: this._afterChangeSetId } :
+        this._first ? { first: this._first } :
+          { latest: true };
+  }
+
+  /** Creates a version from an IModelVersionProps */
+  public static fromJSON(json: IModelVersionProps): IModelVersion {
+    const version = new IModelVersion();
+    version._first = json.first;
+    version._afterChangeSetId = json.afterChangeSetId;
+    version._latest = json.latest;
+    version._versionName = json.versionName;
+    return version;
+  }
+
+  /** Creates a version from an untyped JSON object
+   * @deprecated use fromJSON
+  */
   public static fromJson(jsonObj: any): IModelVersion {
     const version = new IModelVersion();
     Object.assign(version, jsonObj);
@@ -96,17 +124,14 @@ export class IModelVersion {
     if (this._first)
       return "";
 
-    if (this._afterChangeSetId) {
+    if (this._afterChangeSetId)
       return this._afterChangeSetId;
-    }
 
-    if (this._latest) {
+    if (this._latest)
       return IModelVersion.getLatestChangeSetId(requestContext, imodelClient, iModelId);
-    }
 
-    if (this._versionName) {
+    if (this._versionName)
       return IModelVersion.getChangeSetFromNamedVersion(requestContext, imodelClient, iModelId, this._versionName);
-    }
 
     throw new IModelError(BentleyStatus.ERROR, "Invalid version");
   }

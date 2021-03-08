@@ -1,6 +1,128 @@
 # Change Log - @bentley/imodeljs-backend
 
-This log was last generated on Mon, 23 Nov 2020 22:19:30 GMT and should not be manually modified.
+This log was last generated on Tue, 23 Feb 2021 20:54:45 GMT and should not be manually modified.
+
+## 2.12.1
+Tue, 23 Feb 2021 20:54:45 GMT
+
+_Version update only_
+
+## 2.12.0
+Thu, 18 Feb 2021 22:10:13 GMT
+
+### Updates
+
+- Element.code is no longer readonly, so can now be updated
+- Deprecate detachChangeCache()
+- added optional flag to abbreviate blob properties in queries
+- Implement external textures for iModel tiles.
+- Updated create display style test to remove credentials from backgroundLayers definition.
+- Add IModelTransformerOptions.wasSourceIModelCopiedToTarget to better support branching scenarios.
+- Add IModelTransformOptions.isReverseSynchronization to better support synchronizing changes from a branch back to master.
+- Mobile IPC fix
+- Bump native version to 2.12.1
+- Update to @bentley/imodeljs-native@2.12.4
+- lock test
+- add IpcSocket
+- Add beta API for TemplateRecipe2d
+- fix incorrect version logic in UsageLoggingUtilities
+
+## 2.11.0
+Thu, 28 Jan 2021 13:39:27 GMT
+
+### Updates
+
+- Changed storageType from azure to azure?sas=1 for getCommandArgs function
+- Fix brep DataProps to/from flatbuffer to account for base64 string header.
+- Element geometry creation by brep operations. 
+- Reinstated behavior when re-opening files read-write. 
+- enhance BriefcaseManager and BriefcaseDb for edit commands
+- Improve ElementGeometry documentation.
+- Add a check to verify, and fix, the DbGuid in the iModel if it is different than the Guid in iModelHub.
+- ConcurrencyControl.setPolicy was allowing incorrectly typed arguments
+- update imodeljs-backend package.json to use 2.11.5 for imodeljs-native
+- Update to @bentley/imodeljs-native@2.11.8
+- Add IModelExportHandler.onProgress and IModelImporter.onProgress callbacks
+- Separated out API to upgrade iModels.
+- Version compare property checksums
+
+## 2.10.3
+Fri, 08 Jan 2021 18:34:03 GMT
+
+_Version update only_
+
+## 2.10.2
+Fri, 08 Jan 2021 14:52:02 GMT
+
+### Updates
+
+- Update to @bentley/imodeljs-native@2.10.10
+
+## 2.10.1
+Tue, 22 Dec 2020 00:53:38 GMT
+
+### Updates
+
+- Update to @bentley/imodeljs-native@2.10.9
+
+## 2.10.0
+Fri, 18 Dec 2020 18:24:01 GMT
+
+### Updates
+
+- Update minimum Node version to 10.17.0
+- ECSql Support for Binding Sets of Ids
+- Added CheckpointV2 client
+- Support compact representation of DisplayStyleSettings.excludedElements.
+- Added ElementGeometry.Builder and ElementGeometry.Iterator.
+- changed type of member "data" on Texture from string to UInt8Array. ***breaking change***
+- Provide better error message when relationship insert/update/delete is not a linktable relationship.
+- Compress tiles before upload to blob storage by default.
+- Update to @bentley/imodeljs-native@2.10.4
+- Update to @bentley/imodeljs-native@2.10.6
+- Update to @bentley/imodeljs-native@2.10.8
+- channel documentation
+- Version compare top parents test update
+
+## 2.9.9
+Sun, 13 Dec 2020 19:00:03 GMT
+
+### Updates
+
+- Update to @bentley/imodeljs-native@2.9.10
+
+## 2.9.8
+Fri, 11 Dec 2020 02:57:36 GMT
+
+### Updates
+
+- Update to @bentley/imodeljs-native@2.9.9
+
+## 2.9.7
+Wed, 09 Dec 2020 20:58:23 GMT
+
+_Version update only_
+
+## 2.9.6
+Mon, 07 Dec 2020 18:40:48 GMT
+
+### Updates
+
+- Update to @bentley/imodeljs-native@2.9.8 to consume a performance enhancement to Presentation Rules
+
+## 2.9.5
+Sat, 05 Dec 2020 01:55:56 GMT
+
+### Updates
+
+- Update to @bentley/imodeljs-native@2.9.7
+
+## 2.9.4
+Wed, 02 Dec 2020 20:55:40 GMT
+
+### Updates
+
+- Update to @bentley/imodeljs-native@2.9.5
 
 ## 2.9.3
 Mon, 23 Nov 2020 20:57:56 GMT

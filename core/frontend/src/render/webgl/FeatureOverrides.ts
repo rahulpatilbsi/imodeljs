@@ -13,7 +13,7 @@ import { DisplayParams } from "../primitives/DisplayParams";
 import { WebGLDisposable } from "./Disposable";
 import { LineCode } from "./LineCode";
 import { GL } from "./GL";
-import { UniformHandle } from "./Handle";
+import { UniformHandle } from "./UniformHandle";
 import { OvrFlags, TextureUnit } from "./RenderFlags";
 import { sync, SyncObserver } from "./Sync";
 import { System } from "./System";
@@ -350,7 +350,8 @@ export class FeatureOverrides implements WebGLDisposable {
   }
 
   public bindLUT(uniform: UniformHandle): void {
-    this._lut!.bindSampler(uniform, TextureUnit.FeatureSymbology);
+    if (this._lut)
+      this._lut.bindSampler(uniform, TextureUnit.FeatureSymbology);
   }
 
   public bindUniformSymbologyFlags(uniform: UniformHandle): void {

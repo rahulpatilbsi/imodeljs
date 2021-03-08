@@ -53,7 +53,7 @@ interface TimelineComponentState {
 /** Component used to playback timeline data
  * @alpha
  */
-export class TimelineComponent extends React.PureComponent<TimelineComponentProps, TimelineComponentState> {
+export class TimelineComponent extends React.Component<TimelineComponentProps, TimelineComponentState> {
   private _timeLastCycle = 0;
   private _requestFrame = 0;
   private _unmounted = false;
@@ -62,7 +62,6 @@ export class TimelineComponent extends React.PureComponent<TimelineComponentProp
   private _minimizeLabel: string = "Minimize";
   private _repeatLabel: string = "Repeat";
   private _removeListener?: () => void;
-
 
   constructor(props: TimelineComponentProps) {
     super(props);
@@ -92,12 +91,37 @@ export class TimelineComponent extends React.PureComponent<TimelineComponentProp
     this._unmounted = true;
   }
 
+  public shouldComponentUpdate(nextProps: TimelineComponentProps, nextState: TimelineComponentState) {
+    let result = false;
+
+    // istanbul ignore next
+    if (nextState !== this.state || nextProps !== this.props ||
+      nextProps.startDate !== this.props.startDate ||
+      nextProps.endDate !== this.props.endDate ||
+      nextProps.initialDuration !== this.props.initialDuration ||
+      nextProps.repeat !== this.props.repeat
+    )
+      result = true;
+
+    return result;
+  }
+
   public componentDidUpdate(prevProps: TimelineComponentProps) {
+    // istanbul ignore else
     if (this.props.initialDuration !== prevProps.initialDuration) {
       this._setDuration(this.props.initialDuration ? this.props.initialDuration : /* istanbul ignore next */ 0);
     }
-  }
 
+    // istanbul ignore else
+    if (this.props.repeat !== prevProps.repeat) {
+      this._changeRepeatSetting(this.props.repeat);
+    }
+
+    // istanbul ignore else
+    if (this.props.totalDuration !== prevProps.totalDuration) {
+      this._onSetTotalDuration(this.props.totalDuration);
+    }
+  }
   private _handleTimelinePausePlayEvent = (args: GenericUiEventArgs): void => {
     const timelineArgs = args as TimelinePausePlayArgs;
     // istanbul ignore else
@@ -124,6 +148,7 @@ export class TimelineComponent extends React.PureComponent<TimelineComponentProp
     else
       this._onPause();
   };
+
   // user clicked backward button
   private _onBackward = () => {
     // istanbul ignore else
@@ -282,12 +307,25 @@ export class TimelineComponent extends React.PureComponent<TimelineComponentProp
         }
       });
   };
+  private _changeRepeatSetting = (newValue?: boolean) => {
+    // istanbul ignore else
+    if (newValue !== undefined) {
+      this.setState(
+        () => ({ repeat: newValue, isSettingsOpen: false }),
+        () => {
+          // istanbul ignore else
+          if (this.props.onSettingsChange) {
+            this.props.onSettingsChange({ loop: this.state.repeat });
+          }
+        });
+    }
+  };
 
   private _onRepeatChanged = () => {
     this.setState(
       (prevState) => ({ repeat: !prevState.repeat, isSettingsOpen: false }),
       () => {
-        // istanbul ignore else
+      // istanbul ignore else
         if (this.props.onSettingsChange) {
           this.props.onSettingsChange({ loop: this.state.repeat });
         }

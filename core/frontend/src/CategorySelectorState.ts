@@ -5,7 +5,7 @@
 /** @packageDocumentation
  * @module Views
  */
-import { Id64, Id64Arg, Id64String } from "@bentley/bentleyjs-core";
+import { Id64, Id64Arg, Id64String, ObservableSet } from "@bentley/bentleyjs-core";
 import { CategorySelectorProps } from "@bentley/imodeljs-common";
 import { ElementState } from "./EntityState";
 import { IModelConnection } from "./IModelConnection";
@@ -22,11 +22,28 @@ import { IModelConnection } from "./IModelConnection";
 export class CategorySelectorState extends ElementState {
   /** @internal */
   public static get className() { return "CategorySelector"; }
-  public categories: Set<string> = new Set<string>();
+
+  private readonly _categories = new ObservableSet<string>();
+
   constructor(props: CategorySelectorProps, iModel: IModelConnection) {
     super(props, iModel);
     if (props.categories)
       props.categories.forEach((cat) => this.categories.add(cat));
+  }
+
+  public get categories(): Set<string> {
+    return this._categories;
+  }
+
+  public set categories(categories: Set<string>) {
+    this._categories.clear();
+    for (const category of categories)
+      this._categories.add(category);
+  }
+
+  /** @internal */
+  public get observableCategories(): ObservableSet<string> {
+    return this._categories;
   }
 
   public toJSON(): CategorySelectorProps {
@@ -43,18 +60,15 @@ export class CategorySelectorState extends ElementState {
     if (this.categories.size !== other.categories.size || this.name !== other.name || this.id !== other.id)
       return false;
 
-    const otherIter = other.categories.keys();
-    let otherRes = otherIter.next();
-    for (let thisIter = this.categories.keys(), thisRes = thisIter.next(); !thisRes.done; thisRes = thisIter.next(), otherRes = otherIter.next()) {
-      if (thisRes.value !== otherRes.value)
+    for (const cat of this.categories)
+      if (!other.categories.has(cat))
         return false;
-    }
 
     return true;
   }
 
   /** The name of this CategorySelector */
-  public get name(): string { return this.code.getValue(); }
+  public get name(): string { return this.code.value; }
 
   /** Determine whether this CategorySelector includes the specified categoryId string */
   public has(id: Id64String): boolean { return this.categories.has(id.toString()); }

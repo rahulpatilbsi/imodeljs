@@ -7,12 +7,14 @@
 import { AxisAlignedBox3d } from '@bentley/imodeljs-common';
 import { BeButtonEvent } from '@bentley/imodeljs-frontend';
 import { BeDuration } from '@bentley/bentleyjs-core';
+import { Camera } from '@bentley/imodeljs-common';
 import { ColorDef } from '@bentley/imodeljs-common';
 import { DecorateContext } from '@bentley/imodeljs-frontend';
 import { Decorator } from '@bentley/imodeljs-frontend';
 import { EmphasizeElements } from '@bentley/imodeljs-frontend';
 import { EventHandled } from '@bentley/imodeljs-frontend';
 import { GeometrySummaryOptions } from '@bentley/imodeljs-common';
+import { GpuMemoryLimit } from '@bentley/imodeljs-frontend';
 import { Hilite } from '@bentley/imodeljs-common';
 import { HitDetail } from '@bentley/imodeljs-frontend';
 import { Id64Arg } from '@bentley/bentleyjs-core';
@@ -22,18 +24,36 @@ import { LinePixels } from '@bentley/imodeljs-common';
 import { LocateFilterStatus } from '@bentley/imodeljs-frontend';
 import { LocateResponse } from '@bentley/imodeljs-frontend';
 import { MapLayerSource } from '@bentley/imodeljs-frontend';
+import { ParticleProps } from '@bentley/imodeljs-frontend';
+import { Point3d } from '@bentley/geometry-core';
 import { PrimitiveTool } from '@bentley/imodeljs-frontend';
+import { Range1d } from '@bentley/geometry-core';
+import { Range2d } from '@bentley/geometry-core';
+import { Range3d } from '@bentley/geometry-core';
 import { RenderSystemDebugControl } from '@bentley/imodeljs-frontend';
 import { RenderTargetDebugControl } from '@bentley/imodeljs-frontend';
 import { RgbColor } from '@bentley/imodeljs-common';
 import { RgbColorProps } from '@bentley/imodeljs-common';
+import { ScreenSpaceEffectBuilder } from '@bentley/imodeljs-frontend';
+import { ScreenSpaceEffectSource } from '@bentley/imodeljs-frontend';
 import { ScreenViewport } from '@bentley/imodeljs-frontend';
 import { TileBoundingBoxes } from '@bentley/imodeljs-frontend';
 import { Tool } from '@bentley/imodeljs-frontend';
+import { Vector2d } from '@bentley/geometry-core';
 import { ViewFlags } from '@bentley/imodeljs-common';
 import { Viewport } from '@bentley/imodeljs-frontend';
 import { ViewState } from '@bentley/imodeljs-frontend';
 import { ViewStateProps } from '@bentley/imodeljs-common';
+
+// @beta
+export abstract class AddEffectTool extends Tool {
+    protected abstract defineEffect(builder: ScreenSpaceEffectBuilder): void;
+    protected abstract get effectName(): string;
+    // (undocumented)
+    run(): boolean;
+    protected abstract get source(): ScreenSpaceEffectSource;
+    protected abstract get textureCoordFromPosition(): boolean;
+}
 
 // @beta
 export class AnimationIntervalTool extends Tool {
@@ -203,6 +223,20 @@ export interface ButtonProps {
 }
 
 // @beta
+export class ChangeCameraTool extends Tool {
+    // (undocumented)
+    static get maxArgs(): number;
+    // (undocumented)
+    static get minArgs(): number;
+    // (undocumented)
+    parseAndRun(...inArgs: string[]): boolean;
+    // (undocumented)
+    run(camera?: Camera): boolean;
+    // (undocumented)
+    static toolId: string;
+}
+
+// @beta
 export class ChangeEmphasisSettingsTool extends ChangeHiliteTool {
     // (undocumented)
     protected apply(vp: Viewport, settings?: Hilite.Settings): void;
@@ -311,6 +345,18 @@ export interface CheckBoxProps {
     tooltip?: string;
     // (undocumented)
     typeOverride?: string;
+}
+
+// @beta
+export class ClearEffectsTool extends Tool {
+    // (undocumented)
+    static get maxArgs(): number;
+    // (undocumented)
+    static get minArgs(): number;
+    // (undocumented)
+    run(): boolean;
+    // (undocumented)
+    static toolId: string;
 }
 
 // @beta
@@ -447,6 +493,25 @@ export class CompileShadersTool extends RenderSystemDebugControlTool {
 export function convertHexToRgb(hex: string): RgbColor | undefined;
 
 // @beta
+export abstract class ConvolutionEffect extends AddEffectTool {
+    // (undocumented)
+    protected defineEffect(builder: ScreenSpaceEffectBuilder): void;
+    // (undocumented)
+    protected abstract get matrix(): number[];
+    // (undocumented)
+    static get maxArgs(): number;
+    // (undocumented)
+    static get minArgs(): number;
+    // (undocumented)
+    protected get source(): {
+        vertex: string;
+        fragment: string;
+    };
+    // (undocumented)
+    protected get textureCoordFromPosition(): boolean;
+}
+
+// @beta
 export function copyStringToClipboard(str: string): void;
 
 // @alpha
@@ -578,6 +643,7 @@ export interface DiagnosticsPanelProps {
         fps?: boolean;
         tileStats?: boolean;
         memory?: boolean;
+        tileMemoryBreakdown?: boolean;
         gpuProfiler?: boolean;
         toolSettings?: boolean;
     };
@@ -614,9 +680,29 @@ export class DumpPlanProjectionSettingsTool extends DisplayStyleTool {
 }
 
 // @beta
+export class EdgeDetectionEffect extends ConvolutionEffect {
+    // (undocumented)
+    protected get effectName(): string;
+    // (undocumented)
+    protected get matrix(): number[];
+    // (undocumented)
+    static toolId: string;
+}
+
+// @beta
 export class ElementIdFromSourceAspectIdTool extends SourceAspectIdTool {
     // (undocumented)
     protected getECSql(queryId: string): string;
+    // (undocumented)
+    static toolId: string;
+}
+
+// @beta
+export class EmbossEffect extends ConvolutionEffect {
+    // (undocumented)
+    protected get effectName(): string;
+    // (undocumented)
+    protected get matrix(): number[];
     // (undocumented)
     static toolId: string;
 }
@@ -645,6 +731,14 @@ export class EmphasizeSelectedElementsTool extends EmphasizeElementsTool {
     static toolId: string;
     }
 
+// @alpha
+export class ExplosionEffect extends Tool {
+    // (undocumented)
+    run(): boolean;
+    // (undocumented)
+    static toolId: string;
+}
+
 // @internal
 export class ExtensionServiceTool extends Tool {
     // (undocumented)
@@ -666,6 +760,41 @@ export class FadeOutTool extends ViewportToggleTool {
     // (undocumented)
     static toolId: string;
 }
+
+// @beta
+export class FlipImageConfig extends Tool {
+    // (undocumented)
+    static get maxArgs(): number;
+    // (undocumented)
+    static get minArgs(): number;
+    // (undocumented)
+    parseAndRun(...input: string[]): boolean;
+    // (undocumented)
+    run(horizontal?: boolean, vertical?: boolean, color?: boolean): boolean;
+    // (undocumented)
+    static toolId: string;
+}
+
+// @beta
+export class FlipImageEffect extends AddEffectTool {
+    // (undocumented)
+    protected defineEffect(builder: ScreenSpaceEffectBuilder): void;
+    // (undocumented)
+    protected get effectName(): string;
+    // (undocumented)
+    protected get source(): {
+        vertex: string;
+        fragment: string;
+        sampleSourcePixel: string;
+    };
+    // (undocumented)
+    protected get textureCoordFromPosition(): boolean;
+    // (undocumented)
+    static toolId: string;
+}
+
+// @internal (undocumented)
+export function formatMemory(numBytes: number): string;
 
 // @beta
 export class FpsTracker {
@@ -696,6 +825,16 @@ export class FrustumDecorator implements Decorator {
     // (undocumented)
     static get isEnabled(): boolean;
     readonly useCachedDecorations = true;
+}
+
+// @beta
+export class GaussianBlurEffect extends ConvolutionEffect {
+    // (undocumented)
+    protected get effectName(): string;
+    // (undocumented)
+    protected get matrix(): number[];
+    // (undocumented)
+    static toolId: string;
 }
 
 // @alpha (undocumented)
@@ -797,6 +936,42 @@ export interface LabeledNumericInputProps extends NumericInputProps {
 }
 
 // @beta
+export class LensDistortionConfig extends Tool {
+    // (undocumented)
+    static cylindricalRatio: number;
+    // (undocumented)
+    static get maxArgs(): number;
+    // (undocumented)
+    static get minArgs(): number;
+    // (undocumented)
+    parseAndRun(...input: string[]): boolean;
+    // (undocumented)
+    run(strength?: number, ratio?: number): boolean;
+    // (undocumented)
+    static strength: number;
+    // (undocumented)
+    static toolId: string;
+}
+
+// @beta
+export class LensDistortionEffect extends AddEffectTool {
+    // (undocumented)
+    protected defineEffect(builder: ScreenSpaceEffectBuilder): void;
+    // (undocumented)
+    protected get effectName(): string;
+    // (undocumented)
+    protected get source(): {
+        vertex: string;
+        fragment: string;
+        sampleSourcePixel: string;
+    };
+    // (undocumented)
+    protected get textureCoordFromPosition(): boolean;
+    // (undocumented)
+    static toolId: string;
+}
+
+// @beta
 export class LoseWebGLContextTool extends RenderSystemDebugControlTool {
     // (undocumented)
     execute(control: RenderSystemDebugControl): void;
@@ -828,6 +1003,20 @@ export class MapBaseTransparencyTool extends Tool {
     parseAndRun(...args: string[]): boolean;
     // (undocumented)
     run(transparency: number): boolean;
+    // (undocumented)
+    static toolId: string;
+}
+
+// @alpha
+export class MapBaseVisibilityTool extends Tool {
+    // (undocumented)
+    static get maxArgs(): number;
+    // (undocumented)
+    static get minArgs(): number;
+    // (undocumented)
+    parseAndRun(...args: string[]): boolean;
+    // (undocumented)
+    run(visible: boolean): boolean;
     // (undocumented)
     static toolId: string;
 }
@@ -884,6 +1073,154 @@ export class MapLayerZoomTool extends Tool {
     parseAndRun(...args: string[]): boolean;
     // (undocumented)
     run(layerIndex: number): boolean;
+    // (undocumented)
+    static toolId: string;
+}
+
+// @beta
+export class MaskBackgroundMapByElementTool extends PlanarMaskBaseTool {
+    // (undocumented)
+    protected applyMask(vp: ScreenViewport): void;
+    // (undocumented)
+    protected createToolInstance(): PlanarMaskBaseTool;
+    // (undocumented)
+    static get maxArgs(): number;
+    // (undocumented)
+    static get minArgs(): number;
+    // (undocumented)
+    protected showPrompt(): void;
+    // (undocumented)
+    protected targetModelRequired(): boolean;
+    // (undocumented)
+    static toolId: string;
+}
+
+// @beta
+export class MaskBackgroundMapByExcludedElementTool extends PlanarMaskBaseTool {
+    // (undocumented)
+    protected applyMask(vp: ScreenViewport): void;
+    // (undocumented)
+    protected createToolInstance(): PlanarMaskBaseTool;
+    // (undocumented)
+    static get maxArgs(): number;
+    // (undocumented)
+    static get minArgs(): number;
+    // (undocumented)
+    protected showPrompt(): void;
+    // (undocumented)
+    protected targetModelRequired(): boolean;
+    // (undocumented)
+    static toolId: string;
+}
+
+// @beta
+export class MaskBackgroundMapByModelTool extends PlanarMaskBaseTool {
+    // (undocumented)
+    protected applyMask(vp: ScreenViewport): void;
+    // (undocumented)
+    protected createToolInstance(): PlanarMaskBaseTool;
+    // (undocumented)
+    static get maxArgs(): number;
+    // (undocumented)
+    static get minArgs(): number;
+    // (undocumented)
+    protected showPrompt(): void;
+    // (undocumented)
+    protected targetModelRequired(): boolean;
+    // (undocumented)
+    static toolId: string;
+}
+
+// @beta
+export class MaskBackgroundMapBySubCategoryTool extends PlanarMaskBaseTool {
+    // (undocumented)
+    protected allowSelection(): boolean;
+    // (undocumented)
+    protected applyMask(vp: ScreenViewport): void;
+    // (undocumented)
+    protected createToolInstance(): PlanarMaskBaseTool;
+    // (undocumented)
+    static get maxArgs(): number;
+    // (undocumented)
+    static get minArgs(): number;
+    // (undocumented)
+    protected showPrompt(): void;
+    // (undocumented)
+    protected targetModelRequired(): boolean;
+    // (undocumented)
+    static toolId: string;
+}
+
+// @beta
+export class MaskRealityModelByElementTool extends PlanarMaskBaseTool {
+    // (undocumented)
+    protected applyMask(vp: ScreenViewport): void;
+    // (undocumented)
+    protected createToolInstance(): PlanarMaskBaseTool;
+    // (undocumented)
+    static get maxArgs(): number;
+    // (undocumented)
+    static get minArgs(): number;
+    // (undocumented)
+    protected showPrompt(): void;
+    // (undocumented)
+    protected targetModelRequired(): boolean;
+    // (undocumented)
+    static toolId: string;
+}
+
+// @beta
+export class MaskRealityModelByExcludedElementTool extends PlanarMaskBaseTool {
+    // (undocumented)
+    protected applyMask(vp: ScreenViewport): void;
+    // (undocumented)
+    protected createToolInstance(): PlanarMaskBaseTool;
+    // (undocumented)
+    static get maxArgs(): number;
+    // (undocumented)
+    static get minArgs(): number;
+    // (undocumented)
+    protected showPrompt(): void;
+    // (undocumented)
+    protected targetModelRequired(): boolean;
+    // (undocumented)
+    static toolId: string;
+}
+
+// @beta
+export class MaskRealityModelByModelTool extends PlanarMaskBaseTool {
+    // (undocumented)
+    protected applyMask(vp: ScreenViewport): void;
+    // (undocumented)
+    protected createToolInstance(): PlanarMaskBaseTool;
+    // (undocumented)
+    static get maxArgs(): number;
+    // (undocumented)
+    static get minArgs(): number;
+    // (undocumented)
+    protected showPrompt(): void;
+    // (undocumented)
+    protected targetModelRequired(): boolean;
+    // (undocumented)
+    static toolId: string;
+}
+
+// @beta
+export class MaskRealityModelBySubCategoryTool extends PlanarMaskBaseTool {
+    // (undocumented)
+    protected allowSelection(): boolean;
+    // (undocumented)
+    protected applyMask(vp: ScreenViewport): void;
+    // (undocumented)
+    protected createToolInstance(): PlanarMaskBaseTool;
+    // (undocumented)
+    static get maxArgs(): number;
+    // (undocumented)
+    static get minArgs(): number;
+    // (undocumented)
+    protected showPrompt(): void;
+    // (undocumented)
+    protected targetModelRequired(): boolean;
     // (undocumented)
     static toolId: string;
 }
@@ -984,6 +1321,52 @@ export function parseBoolean(arg: string | undefined): boolean | undefined;
 // @beta
 export function parseToggle(arg: string | undefined): string | boolean | undefined;
 
+// @beta
+export abstract class PlanarMaskBaseTool extends PrimitiveTool {
+    // (undocumented)
+    protected readonly _acceptedElementIds: Set<string>;
+    // (undocumented)
+    protected readonly _acceptedModelIds: Set<string>;
+    // (undocumented)
+    protected readonly _acceptedSubCategoryIds: Set<string>;
+    // (undocumented)
+    protected allowSelection(): boolean;
+    // (undocumented)
+    protected abstract applyMask(vp: ScreenViewport): void;
+    // (undocumented)
+    protected abstract createToolInstance(): PlanarMaskBaseTool;
+    // (undocumented)
+    protected elementRequired(): boolean;
+    // (undocumented)
+    exitTool(): void;
+    // (undocumented)
+    filterHit(hit: HitDetail, _out?: LocateResponse): Promise<LocateFilterStatus>;
+    // (undocumented)
+    onCleanup(): void;
+    // (undocumented)
+    onDataButtonDown(ev: BeButtonEvent): Promise<EventHandled>;
+    // (undocumented)
+    onPostInstall(): void;
+    // (undocumented)
+    onRestartTool(): void;
+    // (undocumented)
+    onUnsuspend(): void;
+    // (undocumented)
+    parseAndRun(...args: string[]): boolean;
+    // (undocumented)
+    requireWriteableTarget(): boolean;
+    // (undocumented)
+    protected abstract showPrompt(): void;
+    // (undocumented)
+    protected _targetMaskModelId?: Id64String | number;
+    // (undocumented)
+    protected targetModelRequired(): boolean;
+    // (undocumented)
+    protected _transparency?: number;
+    // (undocumented)
+    protected _useSelection: boolean;
+}
+
 // @beta (undocumented)
 export class ProjectExtentsDecoration {
     constructor(iModel: IModelConnection);
@@ -1041,6 +1424,21 @@ export interface RadioBoxProps {
     vertical?: boolean;
 }
 
+// @beta
+export function randomFloat(min: number, max: number): number;
+
+// @beta
+export function randomFloatInRange(range: Range1d): number;
+
+// @beta
+export function randomInteger(min: number, max: number): number;
+
+// @beta
+export function randomIntegerInRange(range: Range1d): number;
+
+// @beta
+export function randomPositionInRange(range: Range3d): Point3d;
+
 // @alpha (undocumented)
 export class RealityTransitionTool extends Tool {
     // (undocumented)
@@ -1054,6 +1452,9 @@ export class RealityTransitionTool extends Tool {
     // (undocumented)
     static toolId: string;
 }
+
+// @beta
+export function refreshViewportsForEffect(effectName: string): void;
 
 // @beta
 export abstract class RenderSystemDebugControlTool extends Tool {
@@ -1103,6 +1504,38 @@ export class ReorderMapLayers extends Tool {
 export class ReportWebGLCompatibilityTool extends Tool {
     // (undocumented)
     run(_args: any[]): boolean;
+    // (undocumented)
+    static toolId: string;
+}
+
+// @beta
+export class SaturationConfig extends Tool {
+    // (undocumented)
+    static get maxArgs(): number;
+    // (undocumented)
+    static get minArgs(): number;
+    static multiplier: number;
+    // (undocumented)
+    parseAndRun(...input: string[]): boolean;
+    // (undocumented)
+    run(multiplier?: number): boolean;
+    // (undocumented)
+    static toolId: string;
+}
+
+// @beta
+export class SaturationEffect extends AddEffectTool {
+    // (undocumented)
+    protected defineEffect(builder: ScreenSpaceEffectBuilder): void;
+    // (undocumented)
+    protected get effectName(): string;
+    // (undocumented)
+    protected get source(): {
+        vertex: string;
+        fragment: string;
+    };
+    // (undocumented)
+    protected get textureCoordFromPosition(): boolean;
     // (undocumented)
     static toolId: string;
 }
@@ -1188,9 +1621,59 @@ export class SetAspectRatioSkewTool extends Tool {
     static toolId: string;
 }
 
+// @beta
+export class SetGpuMemoryLimitTool extends Tool {
+    // (undocumented)
+    static get maxArgs(): number;
+    // (undocumented)
+    static get minArgs(): number;
+    // (undocumented)
+    parseAndRun(...args: string[]): boolean;
+    // (undocumented)
+    run(limit?: GpuMemoryLimit): boolean;
+    // (undocumented)
+    static toolId: string;
+}
+
+// @beta
+export class SetHigherPriorityRealityModelMasking extends PlanarMaskBaseTool {
+    // (undocumented)
+    protected applyMask(vp: ScreenViewport): void;
+    // (undocumented)
+    protected createToolInstance(): PlanarMaskBaseTool;
+    // (undocumented)
+    protected elementRequired(): boolean;
+    // (undocumented)
+    static get maxArgs(): number;
+    // (undocumented)
+    static get minArgs(): number;
+    // (undocumented)
+    parseAndRun(...args: string[]): boolean;
+    // (undocumented)
+    protected showPrompt(): void;
+    // (undocumented)
+    protected targetModelRequired(): boolean;
+    // (undocumented)
+    static toolId: string;
+}
+
 // @alpha
 export class SetMapBaseTool extends AttachMapLayerTool {
     constructor();
+    // (undocumented)
+    static toolId: string;
+}
+
+// @beta
+export class SetMapHigherPriorityMasking extends Tool {
+    // (undocumented)
+    static get maxArgs(): number;
+    // (undocumented)
+    static get minArgs(): number;
+    // (undocumented)
+    parseAndRun(...args: string[]): boolean;
+    // (undocumented)
+    run(transparency?: number): boolean;
     // (undocumented)
     static toolId: string;
 }
@@ -1352,6 +1835,26 @@ export class SetRealityModelTransparencyTool extends Tool {
 }
 
 // @beta
+export class SharpenEffect extends ConvolutionEffect {
+    // (undocumented)
+    protected get effectName(): string;
+    // (undocumented)
+    protected get matrix(): number[];
+    // (undocumented)
+    static toolId: string;
+}
+
+// @beta
+export class SharpnessEffect extends ConvolutionEffect {
+    // (undocumented)
+    protected get effectName(): string;
+    // (undocumented)
+    protected get matrix(): number[];
+    // (undocumented)
+    static toolId: string;
+}
+
+// @beta
 export class ShowTileVolumesTool extends Tool {
     // (undocumented)
     static get maxArgs(): number;
@@ -1396,6 +1899,46 @@ export interface SliderProps {
     step: string;
     // (undocumented)
     value: string;
+}
+
+// @beta
+export class SnowDecorator implements Decorator {
+    configure(params: Partial<SnowParams>): void;
+    // (undocumented)
+    decorate(context: DecorateContext): void;
+    readonly dispose: VoidFunction;
+    static toggle(viewport: Viewport, enable?: boolean): Promise<void>;
+    readonly viewport: Viewport;
+}
+
+// @beta
+export class SnowEffect extends Tool {
+    // (undocumented)
+    parseAndRun(...args: string[]): boolean;
+    // (undocumented)
+    run(enable?: boolean): boolean;
+    // (undocumented)
+    static toolId: string;
+}
+
+// @beta
+export interface SnowParams {
+    accelerationRange: Range2d;
+    numParticles: number;
+    sizeRange: Range1d;
+    transparencyRange: Range1d;
+    velocityRange: Range2d;
+    windVelocity: number;
+}
+
+// @beta
+export interface SnowParticle extends ParticleProps {
+    velocity: Vector2d;
+    x: number;
+    // (undocumented)
+    y: number;
+    // (undocumented)
+    z: number;
 }
 
 // @beta
@@ -1472,6 +2015,13 @@ export interface TextBoxProps {
 }
 
 // @beta
+export class TileMemoryBreakdown {
+    constructor(parent: HTMLElement);
+    // (undocumented)
+    dispose(): void;
+    }
+
+// @beta
 export class TileStatisticsTracker {
     constructor(parent: HTMLElement, vp: Viewport);
     // (undocumented)
@@ -1504,6 +2054,14 @@ export class ToggleDPIForLODTool extends RenderSystemDebugControlTool {
 export class ToggleDrapeFrustumTool extends RenderTargetDebugControlToggleTool {
     // (undocumented)
     get aspect(): DebugControlBoolean;
+    // (undocumented)
+    static toolId: string;
+}
+
+// @beta
+export class ToggleDrawingGraphicsTool extends ViewportToggleTool {
+    // (undocumented)
+    protected toggle(vp: Viewport, enable?: boolean): void;
     // (undocumented)
     static toolId: string;
 }
@@ -1617,6 +2175,14 @@ export class ToggleSectionCutTool extends Tool {
     parseAndRun(...args: string[]): boolean;
     // (undocumented)
     run(produceCutGeometry?: boolean): boolean;
+    // (undocumented)
+    static toolId: string;
+}
+
+// @beta
+export class ToggleSectionDrawingSpatialViewTool extends ViewportToggleTool {
+    // (undocumented)
+    protected toggle(vp: Viewport, enable?: boolean): void;
     // (undocumented)
     static toolId: string;
 }
@@ -1757,6 +2323,46 @@ export class ToolSettingsTracker {
     // (undocumented)
     dispose(): void;
     }
+
+// @beta
+export class UnmaskMapTool extends Tool {
+    // (undocumented)
+    static get maxArgs(): number;
+    // (undocumented)
+    static get minArgs(): number;
+    // (undocumented)
+    parseAndRun(..._args: string[]): boolean;
+    // (undocumented)
+    run(): boolean;
+    // (undocumented)
+    static toolId: string;
+}
+
+// @beta
+export class UnmaskRealityModelTool extends PlanarMaskBaseTool {
+    // (undocumented)
+    protected applyMask(vp: ScreenViewport): void;
+    // (undocumented)
+    protected createToolInstance(): PlanarMaskBaseTool;
+    // (undocumented)
+    onDataButtonDown(ev: BeButtonEvent): Promise<EventHandled>;
+    // (undocumented)
+    protected showPrompt(): void;
+    // (undocumented)
+    protected targetModelRequired(): boolean;
+    // (undocumented)
+    static toolId: string;
+}
+
+// @beta
+export class UnsharpenEffect extends ConvolutionEffect {
+    // (undocumented)
+    protected get effectName(): string;
+    // (undocumented)
+    protected get matrix(): number[];
+    // (undocumented)
+    static toolId: string;
+}
 
 // @alpha
 export class ViewportAddRealityModel extends Tool {

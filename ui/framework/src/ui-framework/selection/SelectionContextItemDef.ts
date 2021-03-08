@@ -41,7 +41,7 @@ export function isNoSelectionActive(): boolean {
     selectionCount = UiFramework.store.getState()[UiFramework.frameworkStateKey].frameworkState.sessionState.numItemsSelected;
 
   // istanbul ignore if
-  if (activeContentControl && activeContentControl.viewport
+  if (activeContentControl /* istanbul ignore next */ && activeContentControl.viewport
     && /* istanbul ignore next */ (activeContentControl.viewport.view.iModel.selectionSet.size > 0 || selectionCount > 0))
     return false;
   return true;
@@ -71,6 +71,21 @@ export function getIsHiddenIfFeatureOverridesActive(): ConditionalBooleanValue {
  */
 export function getIsHiddenIfSelectionNotActive(): ConditionalBooleanValue {
   return new ConditionalBooleanValue(isNoSelectionActive, getSelectionContextSyncEventIds());
+}
+
+/** return state with isVisible set to true is SectionSet is active.
+ * @beta
+ */
+// istanbul ignore next
+export function featureOverridesActiveStateFunc(state: Readonly<BaseItemState>): BaseItemState {
+  const activeContentControl = ContentViewManager.getActiveContentControl();
+  let isVisible = false;
+
+  // istanbul ignore next
+  if (activeContentControl && activeContentControl.viewport)
+    isVisible = UiFramework.hideIsolateEmphasizeActionHandler.areFeatureOverridesActive(activeContentControl.viewport);
+
+  return { ...state, isVisible };
 }
 
 /** return state with isVisible set to true is SectionSet is active.
@@ -200,7 +215,8 @@ export class SelectionContextToolDefinitions {
       iconSpec: "icon-visibility",
       labelKey: "UiFramework:tools.clearVisibility",
       isHidden: getIsHiddenIfFeatureOverridesActive(),
-      stateFunc: selectionContextStateFunc,
+      stateSyncIds: getFeatureOverrideSyncEventIds(),
+      stateFunc: featureOverridesActiveStateFunc,
       execute: async () => UiFramework.hideIsolateEmphasizeActionHandler.processClearEmphasize(),
     });
   }

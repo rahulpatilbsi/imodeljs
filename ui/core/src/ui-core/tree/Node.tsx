@@ -64,6 +64,7 @@ export interface TreeNodeProps extends CommonProps {
   isSelected?: boolean;
   isHoverDisabled?: boolean;
   onClick?: (e: React.MouseEvent) => void;
+  onContextMenu?: (e: React.MouseEvent) => void;
   onMouseMove?: (e: React.MouseEvent) => void;
   onMouseDown?: (e: React.MouseEvent) => void;
   onMouseUp?: (e: React.MouseEvent) => void;
@@ -104,6 +105,7 @@ export class TreeNode extends React.Component<TreeNodeProps> {
       const props: NodeCheckboxRenderProps = {
         label: "",
         checked: this.props.checkboxProps.state === CheckBoxState.On,
+        indeterminate: this.props.checkboxProps.state === CheckBoxState.Partial,
         disabled: this.props.checkboxProps.isDisabled,
         title: this.props.checkboxProps.tooltip,
         onClick: this._onCheckboxClick,
@@ -134,6 +136,7 @@ export class TreeNode extends React.Component<TreeNodeProps> {
         style={this.props.style}
         data-testid={this.props["data-testid"]}
         onClick={this._onClick}
+        onContextMenu={this.props.onContextMenu}
         onMouseDown={this.props.onMouseDown}
         onMouseUp={this.props.onMouseUp}
         onMouseMove={this.props.onMouseMove}

@@ -1,6 +1,6 @@
 /*---------------------------------------------------------------------------------------------
 * Copyright (c) Bentley Systems, Incorporated. All rights reserved.
-* Licensed under the MIT License. See LICENSE.md in the project root for license terms.
+* See LICENSE.md in the project root for license terms and full copyright notice.
 *--------------------------------------------------------------------------------------------*/
 import { assert, expect } from "chai";
 import { Logger, OpenMode } from "@bentley/bentleyjs-core";
@@ -10,6 +10,8 @@ import { AuthorizedFrontendRequestContext, IModelApp, IModelConnection, RemoteBr
 import { AccessToken } from "@bentley/itwin-client";
 import { TestFrontendAuthorizationClient } from "@bentley/oidc-signin-tool/lib/frontend";
 import { TestContext } from "./setup/TestContext";
+
+/* eslint-disable deprecation/deprecation */
 
 describe("IModel Read/Write Connection", () => {
   let accessToken: AccessToken;
@@ -51,6 +53,7 @@ describe("IModel Read/Write Connection", () => {
 
     expect(iModel).to.exist.and.be.not.empty;
     expect(iModel.getRpcProps()).to.exist.and.be.not.empty;
+    await iModel.close();
   });
   it("should successfully close an open read/write IModelConnection", async () => {
     const contextId = testContext.iModelForWrite!.contextId;
@@ -65,7 +68,7 @@ describe("IModel Read/Write Connection", () => {
     const contextId = testContext.iModelForWrite!.contextId;
     const iModelId = testContext.iModelForWrite!.iModelId;
 
-    const iModel: IModelConnection = await RemoteBriefcaseConnection.open(contextId, iModelId, OpenMode.ReadWrite);
+    const iModel = await RemoteBriefcaseConnection.open(contextId, iModelId, OpenMode.ReadWrite);
 
     const originalExtents = iModel.projectExtents;
     const newExtents = Range3d.create(originalExtents.low, originalExtents.high);
@@ -75,10 +78,13 @@ describe("IModel Read/Write Connection", () => {
 
     await iModel.saveChanges();
 
-    const updatediModel: IModelConnection = await RemoteBriefcaseConnection.open(contextId, iModelId, OpenMode.ReadWrite);
+    const updatediModel = await RemoteBriefcaseConnection.open(contextId, iModelId, OpenMode.ReadWrite);
 
     const updatedExtents = Range3d.fromJSON(updatediModel.projectExtents);
     assert.isTrue(newExtents.isAlmostEqual(updatedExtents), "Project extents successfully updated in database");
+    await iModel.close();
+    await updatediModel.close();
+
   });
 
   it("should successfully save a thumbnail", async () => {
@@ -114,5 +120,6 @@ describe("IModel Read/Write Connection", () => {
     assert.equal(thumbnail2.width, 200);
     assert.equal(thumbnail2.image.length, 301);
     assert.equal(thumbnail2.image[3], 33);
+    await iModel.close();
   });
 });

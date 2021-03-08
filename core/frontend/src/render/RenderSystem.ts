@@ -29,6 +29,8 @@ import { RenderClipVolume } from "./RenderClipVolume";
 import { RenderGraphic, RenderGraphicOwner } from "./RenderGraphic";
 import { RenderMemory } from "./RenderMemory";
 import { RenderTarget } from "./RenderTarget";
+import { ScreenSpaceEffectBuilder, ScreenSpaceEffectBuilderParams } from "./ScreenSpaceEffectBuilder";
+import { ToolAdmin } from "../tools/ToolAdmin";
 
 /* eslint-disable no-restricted-syntax */
 // cSpell:ignore deserializing subcat uninstanced wiremesh qorigin trimesh
@@ -233,6 +235,14 @@ export abstract class RenderSystem implements IDisposable {
    */
   public abstract createGraphicBuilder(placement: Transform, type: GraphicType, viewport: Viewport, pickableId?: Id64String): GraphicBuilder;
 
+  /** Obtain an object capable of producing a custom screen-space effect to be applied to the image rendered by a [[Viewport]].
+   * @returns undefined if screen-space effects are not supported by this RenderSystem.
+   * @beta
+   */
+  public createScreenSpaceEffectBuilder(_params: ScreenSpaceEffectBuilderParams): ScreenSpaceEffectBuilder | undefined {
+    return undefined;
+  }
+
   /** @internal */
   public createTriMesh(args: MeshArgs, instances?: InstancedGraphicParams | Point3d): RenderGraphic | undefined {
     const params = MeshParams.create(args);
@@ -425,9 +435,14 @@ export abstract class RenderSystem implements IDisposable {
 
   /** Create a new texture from an [[ImageSource]]. */
   public async createTextureFromImageSource(source: ImageSource, imodel: IModelConnection | undefined, params: RenderTexture.Params): Promise<RenderTexture | undefined> {
-    const image = await imageElementFromImageSource(source);
-    return IModelApp.hasRenderSystem ? this.createTextureFromImage(image, ImageSourceFormat.Png === source.format, imodel, params) : undefined;
+    const promise = imageElementFromImageSource(source);
+    return promise.then((image: HTMLImageElement) => {
+      return IModelApp.hasRenderSystem ? this.createTextureFromImage(image, ImageSourceFormat.Png === source.format, imodel, params) : undefined;
+    });
   }
+
+  /** Create a new texture by its element ID. This texture will be retrieved asynchronously from the backend. A placeholder image will be associated with the texture until the requested image data loads. */
+  public createTextureFromElement(_id: Id64String, _imodel: IModelConnection, _params: RenderTexture.Params, _format: ImageSourceFormat): RenderTexture | undefined { return undefined; }
 
   /** Create a new texture from a cube of HTML images.
    * @internal
@@ -450,6 +465,25 @@ export abstract class RenderSystem implements IDisposable {
 
   /** @internal */
   public collectStatistics(_stats: RenderMemory.Statistics): void { }
+
+  /** A function that is invoked after the WebGL context is lost. Context loss is almost always caused by excessive consumption of GPU memory.
+   * After context loss occurs, the RenderSystem will be unable to interact with WebGL by rendering viewports, creating graphics and textures, etc.
+   * By default, this function invokes [[ToolAdmin.exceptionHandler]] with a brief message describing what occurred.
+   * An application can override this behavior as follows:
+   * ```ts
+   * RenderSystem.contextLossHandler = (): Promise<any> => {
+   *  // your implementation here.
+   * }
+   * ```
+   * @note Context loss is reported by the browser some short time *after* it has occurred. It is not possible to determine the specific cause.
+   * @see [[TileAdmin.gpuMemoryLimit]] to limit the amount of GPU memory consumed thereby reducing the likelihood of context loss.
+   * @see [[TileAdmin.totalTileContentBytes]] for the amount of GPU memory allocated for tile graphics.
+   * @beta
+   */
+  public static async contextLossHandler(): Promise<any> {
+    const msg = IModelApp.i18n.translate("iModelJs:Errors.WebGLContextLost");
+    return ToolAdmin.exceptionHandler(msg);
+  }
 }
 
 /** A RenderSystem provides access to resources used by the internal WebGL-based rendering system.

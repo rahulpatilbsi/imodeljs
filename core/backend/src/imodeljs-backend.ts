@@ -5,6 +5,7 @@
 export * from "./BriefcaseManager";
 export * from "./Category";
 export * from "./ChangeSummaryManager";
+export * from "./CheckpointManager";
 export * from "./ClassRegistry";
 export * from "./CodeSpecs";
 export * from "./ConcurrencyControl";
@@ -18,6 +19,7 @@ export * from "./ExportGraphics";
 export * from "./IModelJsFs";
 export * from "./Relationship";
 export * from "./Texture";
+export * from "./TxnManager";
 export * from "./LineStyle";
 export * from "./BackendLoggerCategory";
 export * from "./Material";
@@ -28,7 +30,6 @@ export * from "./SqliteStatement";
 export * from "./ViewDefinition";
 export * from "./BisCoreSchema";
 export * from "./ChangedElementsDb";
-export * from "./EventSink";
 export * from "./domains/FunctionalSchema";
 export * from "./domains/FunctionalElements";
 export * from "./domains/GenericSchema";
@@ -36,7 +37,8 @@ export * from "./domains/GenericElements";
 export { IModelJsNative, NativeLoggerCategory } from "@bentley/imodeljs-native";
 export * from "./IModelCloneContext";
 export * from "./IModelHost";
-export * from "./NativeAppBackend";
+export * from "./IpcHost";
+export * from "./NativeHost";
 export * from "./IModelExporter";
 export * from "./IModelImporter";
 export * from "./IModelTransformer";
@@ -47,8 +49,8 @@ export * from "./CloudStorageBackend";
 export * from "./AliCloudStorageService";
 export * from "./DevTools";
 export * from "./oidc/DesktopAuthorizationClient";
-export * from "./oidc/MobileAuthorizationClient";
 export * from "./usage-logging/UsageLoggingUtilities";
+export * from "./LocalhostIpcHost";
 export * from "./IModelDb"; // must be last
 
 /** @docs-package-description

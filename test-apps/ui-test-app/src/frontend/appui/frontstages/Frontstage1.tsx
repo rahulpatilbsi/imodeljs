@@ -3,7 +3,7 @@
 * See LICENSE.md in the project root for license terms and full copyright notice.
 *--------------------------------------------------------------------------------------------*/
 import * as React from "react";
-import { TimelineComponent, TimelinePausePlayAction, TimelinePausePlayArgs } from "@bentley/ui-components";
+import { PlaybackSettings, TimelineComponent, TimelinePausePlayAction, TimelinePausePlayArgs } from "@bentley/ui-components";
 import {
   ActionItemButton, CommandItemDef, ContentLayoutManager, CoreTools, Frontstage, FrontstageDef, FrontstageManager, FrontstageProps, FrontstageProvider, GroupButton,
   NavigationWidget, StagePanel, ToolButton, ToolWidget, useWidgetDirection, Widget, WidgetState, WidgetStateChangedEventArgs, Zone, ZoneLocation,
@@ -21,7 +21,6 @@ import { UiAdmin } from "@bentley/ui-abstract";
 
 function RightPanel() {
   const direction = useWidgetDirection();
-  const [collapsed, setCollapsed] = React.useState(true);
   const [state, setState] = React.useState(() => {
     const frontstageDef = FrontstageManager.activeFrontstageDef!;
     const widgetDef = frontstageDef.findWidgetDef("VerticalPropertyGrid")!;
@@ -40,43 +39,6 @@ function RightPanel() {
   return (
     <>
       <h2>Right panel</h2>
-      <button onClick={() => {
-        const frontstageDef = FrontstageManager.activeFrontstageDef!;
-        const panel = frontstageDef.rightPanel!;
-        const size = collapsed ? 500 : 200;
-        panel.size = size;
-        setCollapsed((prev) => !prev);
-      }}>{collapsed ? "<" : ">"}</button>
-      <button onClick={() => {
-        const frontstageDef = FrontstageManager.activeFrontstageDef!;
-        frontstageDef.restoreLayout();
-      }}>Restore layout</button>
-      <br />
-      <button onClick={() => {
-        const frontstageDef = FrontstageManager.activeFrontstageDef!;
-        const widgetDef = frontstageDef.findWidgetDef("VerticalPropertyGrid")!;
-        widgetDef.setWidgetState(WidgetState.Open);
-      }}>setWidgetState(Open)</button>
-      <button onClick={() => {
-        const frontstageDef = FrontstageManager.activeFrontstageDef!;
-        const widgetDef = frontstageDef.findWidgetDef("VerticalPropertyGrid")!;
-        widgetDef.setWidgetState(WidgetState.Closed);
-      }}>setWidgetState(Closed)</button>
-      <button onClick={() => {
-        const frontstageDef = FrontstageManager.activeFrontstageDef!;
-        const widgetDef = frontstageDef.findWidgetDef("VerticalPropertyGrid")!;
-        widgetDef.setWidgetState(WidgetState.Hidden);
-      }}>setWidgetState(Hidden)</button>
-      <button onClick={() => {
-        const frontstageDef = FrontstageManager.activeFrontstageDef!;
-        const widgetDef = frontstageDef.findWidgetDef("VerticalPropertyGrid")!;
-        widgetDef.show();
-      }}>Show</button>
-      <button onClick={() => {
-        const frontstageDef = FrontstageManager.activeFrontstageDef!;
-        const widgetDef = frontstageDef.findWidgetDef("VerticalPropertyGrid")!;
-        widgetDef.expand();
-      }}>Expand</button>
       <p>{state}</p>
       <p>{direction}</p>
     </>
@@ -87,6 +49,13 @@ function SampleTimelineComponent() {
   const duration = 20 * 1000;
   const startDate = new Date(2014, 6, 6);
   const endDate = new Date(2016, 8, 12);
+  const [loop, setLoop] = React.useState <boolean> (false);
+
+  const handleOnSettingsChange = (settings: PlaybackSettings) => {
+    if (settings.loop !== undefined) {
+      setLoop(settings.loop);
+    }
+  };
 
   return (
     <div>
@@ -97,6 +66,8 @@ function SampleTimelineComponent() {
         totalDuration={duration}
         minimized={true}
         showDuration={true}
+        repeat={loop}
+        onSettingsChange={handleOnSettingsChange}
         alwaysMinimized={true}
         componentId={"sampleApp-sampleTimeline"} // qualify id with "<appName>-" to ensure uniqueness
       />

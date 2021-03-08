@@ -145,10 +145,14 @@ export class WeightPickerButton extends React.PureComponent<WeightPickerProps, W
       }
       this._closePopup();
     } else {
-      if (event.key === SpecialKey.ArrowDown)
-        this.moveFocusInPopup(false, event);
-      else if (event.key === SpecialKey.ArrowUp)
-        this.moveFocusInPopup(true, event);
+      switch (event.key) {
+        case SpecialKey.ArrowDown:
+          this.moveFocusInPopup(false, event);
+          break;
+        case SpecialKey.ArrowUp:
+          this.moveFocusInPopup(true, event);
+          break;
+      }
     }
   };
 
@@ -221,7 +225,9 @@ export class WeightPickerButton extends React.PureComponent<WeightPickerProps, W
               onOpen={this._onPopupOpened}
               focusTarget={`#${this.buildIdForWeight(this.props.activeWeight)}`}
               moveFocus={true}
-              target={this._target} >
+              target={this._target}
+              closeOnNestedPopupOutsideClick
+            >
               {this.renderPopup(this.props.dropDownTitle)}
             </Popup>
           </>

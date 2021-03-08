@@ -7,7 +7,6 @@
  */
 
 import { BeTimePoint, Dictionary, dispose, Id64Array, IModelStatus } from "@bentley/bentleyjs-core";
-import { IModelTileTreeProps } from "@bentley/imodeljs-common";
 import { IModelApp } from "./IModelApp";
 import { IModelConnection } from "./IModelConnection";
 import { TileTree, TileTreeLoadStatus, TileTreeOwner, TileTreeSupplier } from "./tile/internal";
@@ -22,6 +21,7 @@ class TreeOwner implements TileTreeOwner {
 
   public get tileTree(): TileTree | undefined { return this._tileTree; }
   public get loadStatus(): TileTreeLoadStatus { return this._loadStatus; }
+  public get iModel(): IModelConnection { return this._iModel; }
 
   public constructor(id: any, supplier: TileTreeSupplier, iModel: IModelConnection) {
     this.id = id;
@@ -93,16 +93,6 @@ export class Tiles {
       supplier[1].forEach((_key, value) => value.dispose());
 
     this._treesBySupplier.clear();
-  }
-
-  /** @internal */
-  public async getTileTreeProps(id: string): Promise<IModelTileTreeProps> {
-    return IModelApp.tileAdmin.requestTileTreeProps(this._iModel, id);
-  }
-
-  /** @internal */
-  public async getTileContent(treeId: string, contentId: string, isCanceled: () => boolean, guid: string | undefined, qualifier: string | undefined): Promise<Uint8Array> {
-    return IModelApp.tileAdmin.requestTileContent(this._iModel, treeId, contentId, isCanceled, guid, qualifier);
   }
 
   /** @internal */
