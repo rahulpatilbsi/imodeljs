@@ -40,7 +40,7 @@ import { SubjectOwnsSubjects } from "./NavigationRelationship";
  * * [Creating elements]($docs/learning/backend/CreateElements.md)
  * @public
  */
-export class Element extends Entity implements ElementProps {
+export class Element extends Entity {
   /** @internal */
   public static get className(): string { return "Element"; }
   /** @internal */
