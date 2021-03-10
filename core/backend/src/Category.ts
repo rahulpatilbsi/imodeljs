@@ -100,7 +100,7 @@ export class SubCategory extends DefinitionElement {
 /** A Category element is the target of the `category` member of [[GeometricElement]].
  * @public
  */
-export class Category extends DefinitionElement implements CategoryProps {
+export class Category extends DefinitionElement {
   /** @internal */
   public static get className(): string { return "Category"; }
   public rank: Rank = Rank.User;

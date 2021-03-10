@@ -118,7 +118,7 @@ export class TestBim extends Schema {
 export interface TestRelationshipProps extends RelationshipProps {
   property1: string;
 }
-export class TestElementDrivesElement extends ElementDrivesElement implements TestRelationshipProps {
+export class TestElementDrivesElement extends ElementDrivesElement {
   public static get className(): string { return "TestElementDrivesElement"; }
   public property1!: string;
   public static rootChanged = new BeEvent<(props: RelationshipProps, imodel: IModelDb) => void>();
@@ -131,7 +131,7 @@ export class TestElementDrivesElement extends ElementDrivesElement implements Te
 export interface TestPhysicalObjectProps extends PhysicalElementProps {
   intProperty: number;
 }
-export class TestPhysicalObject extends PhysicalElement implements TestPhysicalObjectProps {
+export class TestPhysicalObject extends PhysicalElement {
   public static get className(): string { return "TestPhysicalObject"; }
   public intProperty!: number;
   public static beforeOutputsHandled = new BeEvent<(id: Id64String, imodel: IModelDb) => void>();

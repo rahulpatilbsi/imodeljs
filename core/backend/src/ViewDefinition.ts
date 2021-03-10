@@ -26,7 +26,7 @@ import { IModelDb } from "./IModelDb";
  * Many ViewDefinitions may share the same DisplayStyle.
  * @public
  */
-export abstract class DisplayStyle extends DefinitionElement implements DisplayStyleProps {
+export abstract class DisplayStyle extends DefinitionElement {
   /** @internal */
   public static get className(): string { return "DisplayStyle"; }
   public abstract get settings(): DisplayStyleSettings;
@@ -168,7 +168,7 @@ export interface DisplayStyleCreationOptions extends Omit<DisplayStyle3dSettings
  * See [how to create a DisplayStyle3d]$(docs/learning/backend/CreateElements.md#DisplayStyle3d).
  * @public
  */
-export class DisplayStyle3d extends DisplayStyle implements DisplayStyle3dProps {
+export class DisplayStyle3d extends DisplayStyle {
   /** @internal */
   public static get className(): string { return "DisplayStyle3d"; }
   private readonly _settings: DisplayStyle3dSettings;
@@ -291,7 +291,7 @@ export class DisplayStyle3d extends DisplayStyle implements DisplayStyle3dProps 
  * See [how to create a ModelSelector]$(docs/learning/backend/CreateElements.md#ModelSelector).
  * @public
  */
-export class ModelSelector extends DefinitionElement implements ModelSelectorProps {
+export class ModelSelector extends DefinitionElement {
   /** @internal */
   public static get className(): string { return "ModelSelector"; }
 
@@ -358,7 +358,7 @@ export class ModelSelector extends DefinitionElement implements ModelSelectorPro
  * See [how to create a CategorySelector]$(docs/learning/backend/CreateElements.md#CategorySelector).
  * @public
  */
-export class CategorySelector extends DefinitionElement implements CategorySelectorProps {
+export class CategorySelector extends DefinitionElement {
   /** @internal */
   public static get className(): string { return "CategorySelector"; }
   /** The array of element Ids of the Categories selected by this CategorySelector */
@@ -433,7 +433,7 @@ export class CategorySelector extends DefinitionElement implements CategorySelec
  * @note ViewDefinition is only available in the backend. See [ViewState]($frontend) for usage in the frontend.
  * @public
  */
-export abstract class ViewDefinition extends DefinitionElement implements ViewDefinitionProps {
+export abstract class ViewDefinition extends DefinitionElement {
   /** @internal */
   public static get className(): string { return "ViewDefinition"; }
   /** The element Id of the [[CategorySelector]] for this ViewDefinition */
@@ -524,7 +524,7 @@ export abstract class ViewDefinition extends DefinitionElement implements ViewDe
 /** Defines a view of one or more 3d models.
  * @public
  */
-export abstract class ViewDefinition3d extends ViewDefinition implements ViewDefinition3dProps {
+export abstract class ViewDefinition3d extends ViewDefinition {
   private readonly _details: ViewDetails3d;
   /** @internal */
   public static get className(): string { return "ViewDefinition3d"; }
@@ -582,7 +582,7 @@ export abstract class ViewDefinition3d extends ViewDefinition implements ViewDef
  *        * CategoryIds -----> SpatialCategories <----------GeometricElement3d.Category
  * @public
  */
-export class SpatialViewDefinition extends ViewDefinition3d implements SpatialViewDefinitionProps {
+export class SpatialViewDefinition extends ViewDefinition3d {
   /** @internal */
   public static get className(): string { return "SpatialViewDefinition"; }
   /** The Id of the [[ModelSelector]] for this SpatialViewDefinition. */
@@ -732,7 +732,7 @@ export class OrthographicViewDefinition extends SpatialViewDefinition {
 /** Defines a view of a single 2d model. Each 2d model has its own coordinate system, so only one may appear per view.
  * @public
  */
-export class ViewDefinition2d extends ViewDefinition implements ViewDefinition2dProps {
+export class ViewDefinition2d extends ViewDefinition {
   private readonly _details: ViewDetails;
 
   /** @internal */
@@ -861,7 +861,7 @@ export class TemplateViewDefinition3d extends ViewDefinition3d {
  * coordinate information in different units and/or orientations.
  * @public
  */
-export abstract class AuxCoordSystem extends DefinitionElement implements AuxCoordSystemProps {
+export abstract class AuxCoordSystem extends DefinitionElement {
   /** @internal */
   public static get className(): string { return "AuxCoordSystem"; }
   public type!: number;
@@ -872,7 +872,7 @@ export abstract class AuxCoordSystem extends DefinitionElement implements AuxCoo
 /** A 2d auxiliary coordinate system.
  * @public
  */
-export class AuxCoordSystem2d extends AuxCoordSystem implements AuxCoordSystem2dProps {
+export class AuxCoordSystem2d extends AuxCoordSystem {
   /** @internal */
   public static get className(): string { return "AuxCoordSystem2d"; }
   public origin?: Point2d;
@@ -893,7 +893,7 @@ export class AuxCoordSystem2d extends AuxCoordSystem implements AuxCoordSystem2d
 /** A 3d auxiliary coordinate system.
  * @public
  */
-export class AuxCoordSystem3d extends AuxCoordSystem implements AuxCoordSystem3dProps {
+export class AuxCoordSystem3d extends AuxCoordSystem {
   /** @internal */
   public static get className(): string { return "AuxCoordSystem3d"; }
   public origin?: Point3d;
@@ -933,7 +933,7 @@ export class AuxCoordSystemSpatial extends AuxCoordSystem3d {
 /** Represents an *attachment* of a [[ViewDefinition]] to a [[Sheet]].
  * @public
  */
-export class ViewAttachment extends GraphicalElement2d implements ViewAttachmentProps {
+export class ViewAttachment extends GraphicalElement2d {
   /** @internal */
   public static get className(): string { return "ViewAttachment"; }
   public view: RelatedElement;
@@ -952,7 +952,7 @@ export class ViewAttachment extends GraphicalElement2d implements ViewAttachment
 /** The position in space of a Light.
  * @internal
  */
-export class LightLocation extends SpatialLocationElement implements LightLocationProps {
+export class LightLocation extends SpatialLocationElement {
   /** @internal */
   public static get className(): string { return "LightLocation"; }
   /** Whether this light is currently turned on. */

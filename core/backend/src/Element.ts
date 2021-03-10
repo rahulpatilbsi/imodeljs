@@ -283,7 +283,7 @@ export class Element extends Entity {
 /** An abstract base class to model real world entities that intrinsically have geometry.
  * @public
  */
-export abstract class GeometricElement extends Element implements GeometricElementProps {
+export abstract class GeometricElement extends Element {
   /** @internal */
   public static get className(): string { return "GeometricElement"; }
   /** The Id of the [[Category]] for this GeometricElement. */
@@ -328,7 +328,7 @@ export abstract class GeometricElement extends Element implements GeometricEleme
  * See [how to create a GeometricElement3d]($docs/learning/backend/CreateElements.md#GeometricElement3d).
  * @public
  */
-export abstract class GeometricElement3d extends GeometricElement implements GeometricElement3dProps {
+export abstract class GeometricElement3d extends GeometricElement {
   /** @internal */
   public static get className(): string { return "GeometricElement3d"; }
   public placement: Placement3d;
@@ -370,7 +370,7 @@ export abstract class GraphicalElement3d extends GeometricElement3d {
 /** An abstract base class to model information entities that intrinsically have 2d geometry.
  * @public
  */
-export abstract class GeometricElement2d extends GeometricElement implements GeometricElement2dProps {
+export abstract class GeometricElement2d extends GeometricElement {
   /** @internal */
   public static get className(): string { return "GeometricElement2d"; }
   public placement: Placement2d;
@@ -505,7 +505,7 @@ export class VolumeElement extends SpatialLocationElement {
  * @alpha
  * @deprecated use [[SectionDrawingLocation]].
  */
-export class SectionLocation extends SpatialLocationElement implements SectionLocationProps { // eslint-disable-line deprecation/deprecation
+export class SectionLocation extends SpatialLocationElement { // eslint-disable-line deprecation/deprecation
   /** Section type */
   public sectionType: SectionType;
 
@@ -589,7 +589,7 @@ export abstract class InformationReferenceElement extends InformationContentElem
  * See [how to create a Subject element]$(docs/learning/backend/CreateElements.md#Subject).
  * @public
  */
-export class Subject extends InformationReferenceElement implements SubjectProps {
+export class Subject extends InformationReferenceElement {
   /** @internal */
   public static get className(): string { return "Subject"; }
   public description?: string;
@@ -724,7 +724,7 @@ export class SectionDrawing extends Drawing {
 /** The template for a SheetBorder
  * @public
  */
-export class SheetBorderTemplate extends Document implements SheetBorderTemplateProps {
+export class SheetBorderTemplate extends Document {
   /** @internal */
   public static get className(): string { return "SheetBorderTemplate"; }
   public height?: number;
@@ -736,7 +736,7 @@ export class SheetBorderTemplate extends Document implements SheetBorderTemplate
 /** The template for a [[Sheet]]
  * @public
  */
-export class SheetTemplate extends Document implements SheetTemplateProps {
+export class SheetTemplate extends Document {
   /** @internal */
   public static get className(): string { return "SheetTemplate"; }
   public height?: number;
@@ -754,7 +754,7 @@ export class SheetTemplate extends Document implements SheetTemplateProps {
 /** A digital representation of a *sheet of paper*. Modeled by a [[SheetModel]].
  * @public
  */
-export class Sheet extends Document implements SheetProps {
+export class Sheet extends Document {
   /** @internal */
   public static get className(): string { return "Sheet"; }
   public height: number;
@@ -824,7 +824,7 @@ export abstract class InformationRecordElement extends InformationContentElement
 /** A Definition Element holds configuration-related information that is meant to be referenced / shared.
  * @public
  */
-export abstract class DefinitionElement extends InformationContentElement implements DefinitionElementProps {
+export abstract class DefinitionElement extends InformationContentElement {
   /** @internal */
   public static get className(): string { return "DefinitionElement"; }
   /** If true, don't show this DefinitionElement in user interface lists. */
@@ -925,7 +925,7 @@ export class DefinitionGroup extends DefinitionSet {
 /** Defines a set of properties (the *type*) that may be associated with an element.
  * @public
  */
-export abstract class TypeDefinitionElement extends DefinitionElement implements TypeDefinitionElementProps {
+export abstract class TypeDefinitionElement extends DefinitionElement {
   /** @internal */
   public static get className(): string { return "TypeDefinitionElement"; }
   public recipe?: RelatedElement;
@@ -1129,7 +1129,7 @@ export class TemplateRecipe2d extends RecipeDefinitionElement {
  * @see [iModel Information Hierarchy]($docs/bis/intro/top-of-the-world), [[Subject]], [[Model]]
  * @public
  */
-export abstract class InformationPartitionElement extends InformationContentElement implements InformationPartitionElementProps {
+export abstract class InformationPartitionElement extends InformationContentElement {
   /** @internal */
   public static get className(): string { return "InformationPartitionElement"; }
   public description?: string;
@@ -1254,7 +1254,7 @@ export abstract class LinkElement extends InformationReferenceElement {
 /** An information element that specifies a URL link.
  * @public
  */
-export class UrlLink extends LinkElement implements UrlLinkProps {
+export class UrlLink extends LinkElement {
   /** @internal */
   public static get className(): string { return "UrlLink"; }
   public description?: string;
@@ -1287,7 +1287,7 @@ export class EmbeddedFileLink extends LinkElement {
 /** An information element that links to a repository.
  * @public
  */
-export class RepositoryLink extends UrlLink implements RepositoryLinkProps {
+export class RepositoryLink extends UrlLink {
   /** @internal */
   public static get className(): string { return "RepositoryLink"; }
   public repositoryGuid?: GuidString;
@@ -1320,7 +1320,7 @@ export abstract class RoleElement extends Element {
  * Element instances. Leveraging Geometry Parts can help reduce file size and improve display performance.
  * @public
  */
-export class GeometryPart extends DefinitionElement implements GeometryPartProps {
+export class GeometryPart extends DefinitionElement {
   /** @internal */
   public static get className(): string { return "GeometryPart"; }
   public geom?: GeometryStreamProps;
@@ -1355,7 +1355,7 @@ export class GeometryPart extends DefinitionElement implements GeometryPartProps
 /** The definition element for a line style
  * @public
  */
-export class LineStyle extends DefinitionElement implements LineStyleProps {
+export class LineStyle extends DefinitionElement {
   /** @internal */
   public static get className(): string { return "LineStyle"; }
   public description?: string;

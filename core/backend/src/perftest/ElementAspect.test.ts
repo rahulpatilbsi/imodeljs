@@ -124,7 +124,7 @@ describe("ElementAspectPerformance", () => {
     assert.exists(iModelDb);
 
     interface TestAspectProps extends ElementAspectProps { testUniqueAspectProperty: string }
-    class TestAspect extends ElementAspect implements ElementAspectProps { public testUniqueAspectProperty: string = ""; }
+    class TestAspect extends ElementAspect { public testUniqueAspectProperty: string = ""; }
 
     const count1 = 10000;
     let eleId: Id64String;

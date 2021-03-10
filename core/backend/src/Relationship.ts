@@ -20,7 +20,7 @@ const loggerCategory = BackendLoggerCategory.Relationship;
 /** Base class for all link table ECRelationships
  * @public
  */
-export class Relationship extends Entity implements RelationshipProps {
+export class Relationship extends Entity {
   /** @internal */
   public static get className(): string { return "Relationship"; }
   public readonly sourceId: Id64String;
@@ -163,7 +163,7 @@ export interface ElementDrivesElementProps extends RelationshipProps {
 /** A Relationship where one Element *drives* another Element
  * @beta
  */
-export class ElementDrivesElement extends Relationship implements ElementDrivesElementProps {
+export class ElementDrivesElement extends Relationship {
   /** @internal */
   public static get className(): string { return "ElementDrivesElement"; }
   public status: number;

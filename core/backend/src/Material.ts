@@ -50,7 +50,7 @@ export abstract class PhysicalMaterial extends DefinitionElement {
  * @note See [[PhysicalMaterial]] for the DefinitionElement used to define the matter that makes up physical elements.
  * @public
  */
-export class RenderMaterialElement extends DefinitionElement implements RenderMaterialProps {
+export class RenderMaterialElement extends DefinitionElement {
   /** @internal */
   public static get className(): string { return "RenderMaterial"; }
   public paletteName: string;
