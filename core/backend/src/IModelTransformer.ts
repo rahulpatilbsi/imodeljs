@@ -291,7 +291,7 @@ export class IModelTransformer extends IModelExportHandler {
   }
 
   /** Format an Element for the Logger. */
-  private formatElementForLogger(elementProps: ElementProps): string {
+  private formatElementForLogger(elementProps: ElementProps | Element): string {
     const namePiece: string = elementProps.code.value ? `${elementProps.code.value} ` : elementProps.userLabel ? `${elementProps.userLabel} ` : "";
     return `${elementProps.classFullName} ${namePiece}[${elementProps.id!}]`;
   }

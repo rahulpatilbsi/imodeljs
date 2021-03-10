@@ -22,7 +22,7 @@ import { IModelHost } from "./IModelHost";
 import { IModelJsFs } from "./IModelJsFs";
 import { IpcHost } from "./IpcHost";
 import { Model } from "./Model";
-import { RelationshipProps } from "./Relationship";
+import { Relationship, RelationshipProps } from "./Relationship";
 
 // cspell:ignore rqctx req's cpid cctl stmts specid
 
@@ -194,13 +194,13 @@ export class ConcurrencyControl {
   }
 
   /** @internal [[Model.buildConcurrencyControlRequest]] */
-  public buildRequestForModel(model: ModelProps, opcode: DbOpcode): void {
+  public buildRequestForModel(model: ModelProps | Model, opcode: DbOpcode): void {
     const req = new ConcurrencyControl.Request();
     this.buildRequestForModelTo(req, model, opcode);
     this.addToPendingRequestIfNotHeld(req);
   }
 
-  private buildRequestForModelTo(request: ConcurrencyControl.Request, model: ModelProps, opcode: DbOpcode, modelClass?: typeof Model): void {
+  private buildRequestForModelTo(request: ConcurrencyControl.Request, model: ModelProps | Model, opcode: DbOpcode, modelClass?: typeof Model): void {
     if (modelClass === undefined)
       modelClass = this.iModel.getJsClass<typeof Model>(model.classFullName);
     modelClass.populateRequest(request, model, this.iModel, opcode);
@@ -235,7 +235,7 @@ export class ConcurrencyControl {
   }
 
   /** @internal [[Element.buildConcurrencyControlRequest]] */
-  public buildRequestForElement(element: ElementProps, opcode: DbOpcode): void {
+  public buildRequestForElement(element: ElementProps | Element, opcode: DbOpcode): void {
     const req = new ConcurrencyControl.Request();
     this.buildRequestForElementTo(req, element, opcode);
     this.addToPendingRequestIfNotHeld(req);
@@ -245,7 +245,7 @@ export class ConcurrencyControl {
    * This is public only because Model.populateRequest must be able to call it.
    * @internal
    */
-  public buildRequestForElementTo(request: ConcurrencyControl.Request, element: ElementProps, opcode: DbOpcode, elementClass?: typeof Element): void {
+  public buildRequestForElementTo(request: ConcurrencyControl.Request, element: ElementProps | Element, opcode: DbOpcode, elementClass?: typeof Element): void {
     const original = (DbOpcode.Update === opcode) ? this.iModel.elements.getElement(element.id!) : undefined;
     if (elementClass === undefined)
       elementClass = this.iModel.getJsClass<typeof Element>(element.classFullName);
@@ -279,7 +279,7 @@ export class ConcurrencyControl {
   }
 
   /** @internal [[LinkTableRelationship.buildConcurrencyControlRequest]] */
-  public buildRequestForRelationship(_instance: RelationshipProps, _opcode: DbOpcode): void {
+  public buildRequestForRelationship(_instance: RelationshipProps | Relationship, _opcode: DbOpcode): void {
     // TODO: We don't have any locks for relationship instances. Get rid of this method?
   }
 
@@ -323,7 +323,7 @@ export class ConcurrencyControl {
   }
 
   /** @internal */
-  public async requestResourcesForOpcode(ctx: AuthorizedClientRequestContext, opcode: DbOpcode, elements: ElementProps[], models?: ModelProps[], relationships?: RelationshipProps[]): Promise<void> {
+  public async requestResourcesForOpcode(ctx: AuthorizedClientRequestContext, opcode: DbOpcode, elements: Array<ElementProps | Element>, models?: Array<ModelProps | Model>, relationships?: Array<RelationshipProps | Relationship>): Promise<void> {
     ctx.enter();
 
     const prevRequest = this.pendingRequest.clone();
@@ -363,7 +363,7 @@ export class ConcurrencyControl {
    * See [[ConcurrencyControl.requestResources]], [[ConcurrencyControl.requestResourcesForUpdate]], [[ConcurrencyControl.requestResourcesForDelete]]
    * @beta
    */
-  public async requestResourcesForInsert(ctx: AuthorizedClientRequestContext, elements: ElementProps[], models?: ModelProps[], relationships?: RelationshipProps[]): Promise<void> {
+  public async requestResourcesForInsert(ctx: AuthorizedClientRequestContext, elements: Array<ElementProps | Element>, models?: Array<ModelProps | Model>, relationships?: Array<RelationshipProps | Relationship>): Promise<void> {
     return this.requestResourcesForOpcode(ctx, DbOpcode.Insert, elements, models, relationships);
   }
 
@@ -379,7 +379,7 @@ export class ConcurrencyControl {
    * See [[ConcurrencyControl.Locks.lockModels]]
    * @beta
    */
-  public async requestResourcesForUpdate(ctx: AuthorizedClientRequestContext, elements: ElementProps[], models?: ModelProps[], relationships?: RelationshipProps[]): Promise<void> {
+  public async requestResourcesForUpdate(ctx: AuthorizedClientRequestContext, elements: Array<ElementProps | Element>, models?: Array<ModelProps | Model>, relationships?: Array<RelationshipProps | Relationship>): Promise<void> {
     return this.requestResourcesForOpcode(ctx, DbOpcode.Update, elements, models, relationships);
   }
 
@@ -392,7 +392,7 @@ export class ConcurrencyControl {
    * See [[ConcurrencyControl.requestResources]], [[ConcurrencyControl.requestResourcesForUpdate]], [[ConcurrencyControl.requestResourcesForInsert]]
    * @beta
    */
-  public async requestResourcesForDelete(ctx: AuthorizedClientRequestContext, elements: ElementProps[], models?: ModelProps[], relationships?: RelationshipProps[]): Promise<void> {
+  public async requestResourcesForDelete(ctx: AuthorizedClientRequestContext, elements: Array<ElementProps | Element>, models?: Array<ModelProps | Model>, relationships?: Array<RelationshipProps | Relationship>): Promise<void> {
     return this.requestResourcesForOpcode(ctx, DbOpcode.Delete, elements, models, relationships);
   }
 
@@ -951,7 +951,7 @@ export namespace ConcurrencyControl { // eslint-disable-line no-redeclare
     }
 
     /** @internal */
-    public getChannelRootInfo0(props: ElementProps): any {
+    public getChannelRootInfo0(props: ElementProps | Element): any {
       // special case of legacy *bridges*
       if (props.classFullName === Subject.classFullName) {
         if (props.jsonProperties?.Subject?.Job !== undefined) {
@@ -974,7 +974,7 @@ export namespace ConcurrencyControl { // eslint-disable-line no-redeclare
     }
 
     /** If `props` identifies a channel root element, return information about it. Otherwise, return undefined. */
-    public getChannelRootInfo(props: ElementProps): any | undefined {
+    public getChannelRootInfo(props: ElementProps | Element): any | undefined {
       if (props.id === undefined || Id64.isInvalid(props.id))
         return undefined;
 
@@ -991,7 +991,7 @@ export namespace ConcurrencyControl { // eslint-disable-line no-redeclare
     }
 
     /** Check if `props` is a channel root element. */
-    public isChannelRoot(props: ElementProps): any | undefined {
+    public isChannelRoot(props: ElementProps | Element): any | undefined {
       return this.getChannelRootInfo(props) !== undefined;
     }
 
@@ -1007,7 +1007,7 @@ export namespace ConcurrencyControl { // eslint-disable-line no-redeclare
     }
 
     /** Get the channel to which the specified element belongs */
-    public getChannelOfElement(props: ElementProps): ChannelInfo {
+    public getChannelOfElement(props: ElementProps | Element): ChannelInfo {
 
       // For now, we don't support nested channels, and we require that all channel root elements be in the repository model.
       // That allows us to make the following optimization:
@@ -1085,7 +1085,7 @@ export namespace ConcurrencyControl { // eslint-disable-line no-redeclare
       return this.getChannelRootDescription(this.getChannelOfElement(this._iModel.elements.getElement(channelRootId)) as ChannelRootInfo);
     }
 
-    private throwChannelConstraintError(element: ElementProps, elementChannelInfo: ConcurrencyControl.ChannelInfo, restriction?: string) {
+    private throwChannelConstraintError(element: ElementProps | Element, elementChannelInfo: ConcurrencyControl.ChannelInfo, restriction?: string) {
       let metadata = {};
 
       let channelRootInfo: ChannelRootInfo;
@@ -1109,7 +1109,7 @@ export namespace ConcurrencyControl { // eslint-disable-line no-redeclare
       throw new ChannelConstraintError(message, Logger.logError, loggerCategory, () => metadata);
     }
 
-    private checkCodeScopeInCurrentChannel(props: ElementProps) {
+    private checkCodeScopeInCurrentChannel(props: ElementProps | Element) {
       if (!Id64.isValidId64(props.code.scope))
         return;
       const scopeElement = this._iModel.elements.tryGetElement<Element>(props.code.scope);
@@ -1126,7 +1126,7 @@ export namespace ConcurrencyControl { // eslint-disable-line no-redeclare
     }
 
     /** @internal */
-    public checkCanWriteElementToCurrentChannel(props: ElementProps, req: Request, opcode: DbOpcode) {
+    public checkCanWriteElementToCurrentChannel(props: ElementProps | Element, req: Request, opcode: DbOpcode) {
       this.checkCodeScopeInCurrentChannel(props);
 
       const elementChannelInfo = this.getChannelOfElement(props);
@@ -1308,17 +1308,17 @@ export namespace ConcurrencyControl { // eslint-disable-line no-redeclare
   }
 
   export interface ElementAndOpcode {
-    element: ElementProps;
+    element: ElementProps | Element;
     opcode: DbOpcode;
   }
 
   export interface ModelAndOpcode {
-    model: ModelProps;
+    model: ModelProps | Model;
     opcode: DbOpcode;
   }
 
   export interface RelationshipAndOpcode {
-    relationship: RelationshipProps;
+    relationship: RelationshipProps | Relationship;
     opcode: DbOpcode;
   }
 

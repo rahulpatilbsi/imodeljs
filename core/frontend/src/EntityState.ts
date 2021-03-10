@@ -14,7 +14,7 @@ import { IModelConnection } from "./IModelConnection";
  * @public
  */
 export class EntityState implements EntityProps {
-  public readonly isEntityState: true = true;
+  public readonly isInstanceOfEntity: true = true;
 
   /** The name of the BIS schema for this class.
    * @note Subclasses from other than the BisCore domain must override the static member "schemaName" with their schema name.

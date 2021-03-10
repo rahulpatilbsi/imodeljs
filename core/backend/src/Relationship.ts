@@ -210,7 +210,7 @@ export class Relationships {
    * @note The id property of the props object is set as a side effect of this function.
    * @throws [[IModelError]] if unable to insert the relationship instance.
    */
-  public insertInstance(props: RelationshipProps): Id64String {
+  public insertInstance(props: RelationshipProps | Relationship): Id64String {
     this.checkRelationshipClass(props.classFullName);
     const val = this._iModel.nativeDb.insertLinkTableRelationship(props);
     if (val.error)
@@ -224,7 +224,7 @@ export class Relationships {
    * @param props the properties of the relationship instance to update. Any properties that are not present will be left unchanged.
    * @throws [[IModelError]] if unable to update the relationship instance.
    */
-  public updateInstance(props: RelationshipProps): void {
+  public updateInstance(props: RelationshipProps | Relationship): void {
     this.checkRelationshipClass(props.classFullName);
     const error = this._iModel.nativeDb.updateLinkTableRelationship(props);
     if (error !== DbResult.BE_SQLITE_OK)
@@ -235,7 +235,7 @@ export class Relationships {
    * @param id The Id of the Relationship to be deleted
    * @throws [[IModelError]]
    */
-  public deleteInstance(props: RelationshipProps): void {
+  public deleteInstance(props: RelationshipProps | Relationship): void {
     this.checkRelationshipClass(props.classFullName);
     const error = this._iModel.nativeDb.deleteLinkTableRelationship(props);
     if (error !== DbResult.BE_SQLITE_DONE)
@@ -301,7 +301,7 @@ export class Relationships {
    * @see getInstance
    */
   public tryGetInstance<T extends Relationship>(relClassFullName: string, criteria: Id64String | SourceAndTarget): T | undefined {
-    const relationshipProps = this.tryGetInstanceProps<T>(relClassFullName, criteria);
+    const relationshipProps = this.tryGetInstanceProps(relClassFullName, criteria);
     return undefined !== relationshipProps ? this._iModel.constructEntity<T>(relationshipProps) : undefined;
   }
 }

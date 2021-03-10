@@ -52,7 +52,7 @@ const loggerCategory: string = BackendLoggerCategory.IModelDb;
 /** Options for [[IModelDb.Models.updateModel]]
  * @public
  */
-export interface UpdateModelOptions extends ModelProps {
+export interface UpdateModelOptions extends Omit<ModelProps, "isInstanceOfEntity"> {
   /** If defined, update the last modify time of the Model */
   updateLastMod?: boolean;
   /** If defined, update the GeometryGuid of the Model */
@@ -1315,7 +1315,7 @@ export namespace IModelDb { // eslint-disable-line no-redeclare
      * @see getModel
      */
     public tryGetModel<T extends Model>(modelId: Id64String, modelClass?: EntityClassType<Model>): T | undefined {
-      const modelProps = this.tryGetModelProps<T>(modelId);
+      const modelProps = this.tryGetModelProps(modelId);
       if (undefined === modelProps) {
         return undefined; // no Model with that modelId found
       }
@@ -1400,20 +1400,21 @@ export namespace IModelDb { // eslint-disable-line no-redeclare
      * @returns The newly inserted model's Id.
      * @throws [[IModelError]] if unable to insert the model.
      */
-    public insertModel(props: ModelProps): Id64String {
-      if (props.isPrivate === undefined) // temporarily work around bug in addon
-        props.isPrivate = false;
+    public insertModel(props: ModelProps | Model): Id64String {
+      const json = props.isInstanceOfEntity ? props.toJSON() : props;
+      if (json.isPrivate === undefined) // temporarily work around bug in addon
+        json.isPrivate = false;
 
-      const jsClass = this._iModel.getJsClass<typeof Model>(props.classFullName) as any; // "as any" so we can call the protected methods
-      jsClass.onInsert(props, this._iModel);
+      const jsClass = this._iModel.getJsClass<typeof Model>(json.classFullName) as any; // "as any" so we can call the protected methods
+      jsClass.onInsert(json, this._iModel);
 
-      const val = this._iModel.nativeDb.insertModel(props);
+      const val = this._iModel.nativeDb.insertModel(json);
       if (val.error)
         throw new IModelError(val.error.status, "inserting model", Logger.logWarning, loggerCategory);
 
-      props.id = Id64.fromJSON(val.result!.id);
-      jsClass.onInserted(props.id, this._iModel);
-      return props.id;
+      props.id = json.id = Id64.fromJSON(val.result!.id);
+      jsClass.onInserted(json.id, this._iModel);
+      return json.id;
     }
 
     /** Update an existing model.
@@ -1544,7 +1545,7 @@ export namespace IModelDb { // eslint-disable-line no-redeclare
       } else if (elementId instanceof Code) {
         elementId = { code: elementId };
       }
-      const elementProps = this.tryGetElementJson<T>(elementId);
+      const elementProps = this.tryGetElementJson(elementId);
       if (undefined === elementProps) {
         return undefined; // no Element with that elementId found
       }
@@ -1609,8 +1610,8 @@ export namespace IModelDb { // eslint-disable-line no-redeclare
      * @returns The newly inserted element's Id.
      * @throws [[IModelError]] if unable to insert the element.
      */
-    public insertElement(elProps: ElementProps): Id64String {
-      const json = elProps instanceof Element ? elProps.toJSON() : elProps;
+    public insertElement(elProps: ElementProps | Element): Id64String {
+      const json = elProps.isInstanceOfEntity ? elProps.toJSON() : elProps;
       const iModel = this._iModel;
       const jsClass = iModel.getJsClass<typeof Element>(json.classFullName) as any; // "as any" so we can call the protected methods
       jsClass.onInsert(json, iModel);
@@ -1631,8 +1632,8 @@ export namespace IModelDb { // eslint-disable-line no-redeclare
      * @note As described above, this is a special case where there is a difference between a property being excluded and a property being present in `elProps` but set to `undefined`.
      * @throws [[IModelError]] if unable to update the element.
      */
-    public updateElement(elProps: ElementProps): void {
-      const json = elProps instanceof Element ? elProps.toJSON() : elProps;
+    public updateElement(elProps: ElementProps | Element): void {
+      const json = elProps.isInstanceOfEntity ? elProps.toJSON() : elProps;
       const iModel = this._iModel;
       const jsClass = iModel.getJsClass<typeof Element>(json.classFullName) as any; // "as any" so we can call the protected methods
       jsClass.onUpdate(json, iModel);
@@ -1844,32 +1845,34 @@ export namespace IModelDb { // eslint-disable-line no-redeclare
      * @param aspectProps The properties of the new ElementAspect.
      * @throws [[IModelError]] if unable to insert the ElementAspect.
      */
-    public insertAspect(aspectProps: ElementAspectProps): void {
+    public insertAspect(aspectProps: ElementAspectProps | ElementAspect): void {
+      const json = aspectProps.isInstanceOfEntity ? aspectProps.toJSON() : aspectProps;
       const iModel = this._iModel;
-      const jsClass = iModel.getJsClass<typeof ElementAspect>(aspectProps.classFullName) as any; // "as any" so we can call the protected methods
-      jsClass.onInsert(aspectProps, iModel);
+      const jsClass = iModel.getJsClass<typeof ElementAspect>(json.classFullName) as any; // "as any" so we can call the protected methods
+      jsClass.onInsert(json, iModel);
 
-      const status = iModel.nativeDb.insertElementAspect(aspectProps);
+      const status = iModel.nativeDb.insertElementAspect(json);
       if (status !== IModelStatus.Success)
-        throw new IModelError(status, "Error inserting ElementAspect", Logger.logWarning, loggerCategory, () => ({ classFullName: aspectProps.classFullName }));
+        throw new IModelError(status, "Error inserting ElementAspect", Logger.logWarning, loggerCategory, () => ({ classFullName: json.classFullName }));
 
-      jsClass.onInserted(aspectProps, iModel);
+      jsClass.onInserted(json, iModel);
     }
 
     /** Update an exist ElementAspect within the iModel.
      * @param aspectProps The properties to use to update the ElementAspect.
      * @throws [[IModelError]] if unable to update the ElementAspect.
      */
-    public updateAspect(aspectProps: ElementAspectProps): void {
+    public updateAspect(aspectProps: ElementAspectProps | ElementAspect): void {
+      const json = aspectProps.isInstanceOfEntity ? aspectProps.toJSON() : aspectProps;
       const iModel = this._iModel;
-      const jsClass = iModel.getJsClass<typeof ElementAspect>(aspectProps.classFullName) as any; // "as any" so we can call the protected methods
-      jsClass.onUpdate(aspectProps, iModel);
+      const jsClass = iModel.getJsClass<typeof ElementAspect>(json.classFullName) as any; // "as any" so we can call the protected methods
+      jsClass.onUpdate(json, iModel);
 
-      const status = iModel.nativeDb.updateElementAspect(aspectProps as any);
+      const status = iModel.nativeDb.updateElementAspect(json as any);
       if (status !== IModelStatus.Success)
-        throw new IModelError(status, "Error updating ElementAspect", Logger.logWarning, loggerCategory, () => ({ aspectInstanceId: aspectProps.id }));
+        throw new IModelError(status, "Error updating ElementAspect", Logger.logWarning, loggerCategory, () => ({ aspectInstanceId: json.id }));
 
-      jsClass.onUpdated(aspectProps, iModel);
+      jsClass.onUpdated(json, iModel);
     }
 
     /** Delete one or more ElementAspects from this iModel.

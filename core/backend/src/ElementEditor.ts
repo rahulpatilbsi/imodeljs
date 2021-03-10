@@ -105,7 +105,7 @@ export class GeometricElement3dEditor implements IElementEditor {
     if (undefined === props.classFullName)
       throw new BentleyError(IModelStatus.BadArg, "GeometricElement3dEditor.createElement - missing classFullName", Logger.logError, loggingCategory, () => ({ props }));
 
-    let newElements: GeometricElement3dProps[];
+    let newElements: Array<GeometricElement3dProps | GeometricElement3d>;
 
     const geometry = geometryJson ? IModelJson.Reader.parse(geometryJson) : undefined;
 
@@ -148,10 +148,10 @@ export class GeometricElement3dEditor implements IElementEditor {
   }
 
   /** Write all elements in the queue to the briefcase. That is, update modified elements and insert new ones. */
-  public writeAllChangesToBriefcase(opts?: Editor3dRpcInterfaceWriteOptions): GeometricElement3dProps[] | Id64Array | void {
+  public writeAllChangesToBriefcase(opts?: Editor3dRpcInterfaceWriteOptions): Array<GeometricElement3dProps> | Id64Array | void {
     this._targets.forEach((t) => this.writeChangesToBriefcase(t));
 
-    let retval: GeometricElement3dProps[] | Id64Array | undefined;
+    let retval: Array<GeometricElement3dProps> | Id64Array | undefined;
     switch (opts?.returnType) {
       case Editor3dRpcInterfaceWriteReturnType.Ids:
         retval = this._targets.map((t) => t.element.id!);
@@ -190,10 +190,10 @@ export namespace GeometricElement3dEditor { // eslint-disable-line no-redeclare
 
   /** @internal */
   export class Target {
-    public element: GeometricElement3dProps;
+    public element: GeometricElement3dProps | GeometricElement3d;
     public newGeometry?: GeometryStreamBuilder[];
 
-    constructor(el: GeometricElement3dProps) {
+    constructor(el: GeometricElement3dProps | GeometricElement3d) {
       this.element = el;
     }
   }

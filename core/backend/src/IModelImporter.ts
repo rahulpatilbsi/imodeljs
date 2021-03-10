@@ -330,14 +330,14 @@ export class IModelImporter {
   }
 
   /** Format an ElementAspect for the Logger. */
-  private formatElementAspectForLogger(elementAspectProps: ElementAspectProps): string {
+  private formatElementAspectForLogger(elementAspectProps: ElementAspectProps | ElementAspect): string {
     return `${elementAspectProps.classFullName} elementId=[${elementAspectProps.element.id}]`;
   }
 
   /** Import the specified RelationshipProps (either as an insert or an update) into the target iModel.
    * @returns The instance Id of the inserted or updated Relationship.
    */
-  public importRelationship(relationshipProps: RelationshipProps): Id64String {
+  public importRelationship(relationshipProps: RelationshipProps | Relationship): Id64String {
     if ((undefined === relationshipProps.sourceId) || !Id64.isValidId64(relationshipProps.sourceId)) {
       Logger.logInfo(loggerCategory, `Ignoring ${relationshipProps.classFullName} instance because of invalid RelationshipProps.sourceId`);
       return Id64.invalid;
@@ -365,7 +365,7 @@ export class IModelImporter {
    * @param relationshipProps The new RelationshipProps to compare against
    * @returns `true` if a change is detected
    */
-  private hasRelationshipChanged(relationship: Relationship, relationshipProps: RelationshipProps): boolean {
+  private hasRelationshipChanged(relationship: Relationship, relationshipProps: RelationshipProps | Relationship): boolean {
     let changed: boolean = false;
     relationship.forEachProperty((propertyName: string) => {
       if (!changed && (relationship.asAny[propertyName] !== (relationshipProps as any)[propertyName])) {
@@ -379,7 +379,7 @@ export class IModelImporter {
    * @returns The instance Id of the newly inserted relationship.
    * @note A subclass may override this method to customize insert behavior but should call `super.onInsertRelationship`.
    */
-  protected onInsertRelationship(relationshipProps: RelationshipProps): Id64String {
+  protected onInsertRelationship(relationshipProps: RelationshipProps | Relationship): Id64String {
     try {
       const targetRelInstanceId: Id64String = this.targetDb.relationships.insertInstance(relationshipProps);
       Logger.logInfo(loggerCategory, `Inserted ${this.formatRelationshipForLogger(relationshipProps)}`);
@@ -398,7 +398,7 @@ export class IModelImporter {
   /** Update an existing Relationship in the target iModel from the specified RelationshipProps.
    * @note A subclass may override this method to customize update behavior but should call `super.onUpdateRelationship`.
    */
-  protected onUpdateRelationship(relationshipProps: RelationshipProps): void {
+  protected onUpdateRelationship(relationshipProps: RelationshipProps | Relationship): void {
     if (!relationshipProps.id) {
       throw new IModelError(IModelStatus.InvalidId, "Relationship instance Id not provided", Logger.logError, loggerCategory);
     }
@@ -408,19 +408,19 @@ export class IModelImporter {
   }
 
   /** Delete the specified Relationship from the target iModel. */
-  protected onDeleteRelationship(relationshipProps: RelationshipProps): void {
+  protected onDeleteRelationship(relationshipProps: RelationshipProps | Relationship): void {
     this.targetDb.relationships.deleteInstance(relationshipProps);
     Logger.logInfo(loggerCategory, `Deleted relationship ${this.formatRelationshipForLogger(relationshipProps)}`);
     this.trackProgress();
   }
 
   /** Delete the specified Relationship from the target iModel. */
-  public deleteRelationship(relationshipProps: RelationshipProps): void {
+  public deleteRelationship(relationshipProps: RelationshipProps | Relationship): void {
     this.onDeleteRelationship(relationshipProps);
   }
 
   /** Format a Relationship for the Logger. */
-  private formatRelationshipForLogger(relProps: RelationshipProps): string {
+  private formatRelationshipForLogger(relProps: RelationshipProps | Relationship): string {
     return `${relProps.classFullName} sourceId=[${relProps.sourceId}] targetId=[${relProps.targetId}]`;
   }
 

@@ -80,7 +80,7 @@ export class Element extends Entity {
    * @param original a pre-change copy of the element. Passed only in the case of Update.
    * @beta
    */
-  public static populateRequest(req: ConcurrencyControl.Request, props: ElementProps, iModel: IModelDb, opcode: DbOpcode, original: ElementProps | undefined) {
+  public static populateRequest(req: ConcurrencyControl.Request, props: ElementProps | Element, iModel: IModelDb, opcode: DbOpcode, original: ElementProps | Element | undefined) {
     assert(iModel.isBriefcaseDb());
     if (!iModel.isBriefcaseDb()) {
       return;

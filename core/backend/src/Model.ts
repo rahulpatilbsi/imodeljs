@@ -63,7 +63,7 @@ export class Model extends Entity {
    * @param opcode The operation that will be performed on the model
    * @beta
    */
-  public static populateRequest(req: ConcurrencyControl.Request, props: ModelProps, iModel: IModelDb, opcode: DbOpcode): void {
+  public static populateRequest(req: ConcurrencyControl.Request, props: ModelProps | Model, iModel: IModelDb, opcode: DbOpcode): void {
     if (!iModel.isBriefcaseDb()) {
       assert(false);
       return;

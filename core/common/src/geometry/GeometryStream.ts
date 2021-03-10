@@ -538,7 +538,7 @@ export class GeometryStreamIterator implements IterableIterator<GeometryStreamIt
    * If [[GeometricElement3dProps.placement]] is not undefined, placement relative entries will be returned transformed to world coordinates.
    * @throws [[IModelError]] if element.geom is undefined.
    */
-  public static fromGeometricElement3d(element: GeometricElement3dProps) {
+  public static fromGeometricElement3d(element: Omit<GeometricElement3dProps, "isInstanceOfEntity">) {
     if (element.geom === undefined)
       throw new IModelError(IModelStatus.NoGeometry, "GeometricElement has no geometry or geometry wasn't requested");
 
@@ -553,7 +553,7 @@ export class GeometryStreamIterator implements IterableIterator<GeometryStreamIt
    * If [[GeometricElement2dProps.placement]] is not undefined, placement relative entries will be returned transformed to world coordinates.
    * @throws [[IModelError]] if element.geom is undefined.
    */
-  public static fromGeometricElement2d(element: GeometricElement2dProps) {
+  public static fromGeometricElement2d(element: Omit<GeometricElement2dProps, "isInstanceOfEntity">) {
     if (element.geom === undefined)
       throw new IModelError(IModelStatus.NoGeometry, "GeometricElement has no geometry or geometry wasn't requested");
 
@@ -574,7 +574,7 @@ export class GeometryStreamIterator implements IterableIterator<GeometryStreamIt
    * Supply the partToLocal transform to return the part geometry relative to the [[GeometricElement]]'s placement.
    * @throws [[IModelError]] if geomPart.geom is undefined.
    */
-  public static fromGeometryPart(geomPart: GeometryPartProps, geomParams?: GeometryParams, partTransform?: Transform) {
+  public static fromGeometryPart(geomPart: Omit<GeometryPartProps, "isInstanceOfEntity">, geomParams?: GeometryParams, partTransform?: Transform) {
     if (geomPart.geom === undefined)
       throw new IModelError(IModelStatus.NoGeometry, "GeometryPart has no geometry or geometry wasn't requested");
 

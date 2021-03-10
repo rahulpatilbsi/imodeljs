@@ -135,7 +135,7 @@ class ResponseGenerator {
       if (geometricElement.is2d())
         iterator = GeometryStreamIterator.fromGeometricElement2d(geometricElement);
       else
-        iterator = GeometryStreamIterator.fromGeometricElement3d(geometricElement as GeometricElement3dProps);
+        iterator = GeometryStreamIterator.fromGeometricElement3d(geometricElement as GeometricElement3d);
     } else if (elem instanceof GeometryPart) {
       iterator = GeometryStreamIterator.fromGeometryPart(elem);
     }
