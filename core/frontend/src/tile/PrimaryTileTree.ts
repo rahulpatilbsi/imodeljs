@@ -74,25 +74,30 @@ class PrimaryTreeSupplier implements TileTreeSupplier {
       batchType: BatchType.Primary,
     };
 
+    let tree: IModelTileTree;
     const params = iModelTileTreeParamsFromJSON(props, iModel, id.modelId, options);
-    if (!id.isPlanProjection)
-      return new IModelTileTree(params);
-
-    let elevation = 0;
-    try {
-      const ranges = await iModel.models.queryModelRanges(id.modelId);
-      if (1 === ranges.length) {
-        const range = Range3d.fromJSON(ranges[0]);
-        const lo = range.low.z;
-        const hi = range.high.z;
-        if (lo <= hi)
-          elevation = (lo + hi) / 2;
+    if (!id.isPlanProjection) {
+      tree = new IModelTileTree(params);
+    } else {
+      let elevation = 0;
+      try {
+        const ranges = await iModel.models.queryModelRanges(id.modelId);
+        if (1 === ranges.length) {
+          const range = Range3d.fromJSON(ranges[0]);
+          const lo = range.low.z;
+          const hi = range.high.z;
+          if (lo <= hi)
+            elevation = (lo + hi) / 2;
+        }
+      } catch (_err) {
+        //
       }
-    } catch (_err) {
-      //
+
+      tree = new PlanProjectionTileTree(params, elevation);
     }
 
-    return new PlanProjectionTileTree(params, elevation);
+    await tree.forceElementDraw();
+    return tree;
   }
 
   public getOwner(id: PrimaryTreeId, iModel: IModelConnection): TileTreeOwner {

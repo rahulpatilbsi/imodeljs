@@ -14,9 +14,9 @@ import { System } from "./System";
  */
 export class Debug {
   /** Whether [[Debug.print]] will actually produce output. */
-  public static printEnabled = false;
+  public static printEnabled = true;
   /** Whether [[Debug.evaluate]] will actually evaluate an expression. */
-  public static evaluateEnabled = false;
+  public static evaluateEnabled = true;
 
   /** If [[Debug.printEnabled]] is true, outputs a message using `console.log`.
    * @param message A function which returns a string. If [[Debug.printEnabled]] is false, the function is never evaluated.

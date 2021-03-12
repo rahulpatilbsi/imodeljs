@@ -6,11 +6,11 @@
  * @module Tiles
  */
 
-import { assert, BeTimePoint, GuidString, Id64Array, Id64String } from "@bentley/bentleyjs-core";
+import { assert, BeEvent, BeTimePoint, DbOpcode, GuidString, Id64Array, Id64String } from "@bentley/bentleyjs-core";
 import { Range3d, Transform } from "@bentley/geometry-core";
 import {
-  BatchType, ContentIdProvider, ElementAlignedBox3d, ElementGeometryChange, FeatureAppearanceProvider,
-  IModelTileTreeProps, ModelGeometryChanges, TileProps, ViewFlagOverrides,
+  BatchType, ContentIdProvider, ElementAlignedBox3d, ElementGeometryChange, ExtantElementGeometryChange, FeatureAppearanceProvider,
+  IModelTileTreeProps, ModelGeometryChanges, Placement3d, TileProps, ViewFlagOverrides,
 } from "@bentley/imodeljs-common";
 import { IModelApp } from "../IModelApp";
 import { IModelConnection } from "../IModelConnection";
@@ -159,9 +159,33 @@ class RootTile extends Tile {
   public readonly staticBranch: IModelTile;
   private _tileState: RootTileState;
   private readonly _staticTreeContentRange?: Range3d;
+  private _forceElementDraw;
+
+  public async forceElementDraw(): Promise<void> {
+    const changes: ExtantElementGeometryChange[] = [];
+    for await (const row of this.tree.iModel.query(`SELECT ECInstanceId as elemId, Origin, Yaw, Pitch, Roll, BBoxLow as low, BBoxHigh as high FROM bis.GeometricElement3d WHERE GeometryStream IS NOT NULL AND Model.Id=${this.tree.modelId}`)) {
+      const angles = { yaw: row.yaw, pitch: row.pitch, roll: row.roll };
+      const placementProps = { origin: row.origin, angles, bbox: { low: row.low, high: row.high } };
+      const placement = Placement3d.fromJSON(placementProps);
+      const range = placement.calculateRange();
+      changes.push({ id: row.elemId, type: DbOpcode.Update, range });
+    }
+
+    this._forceElementDraw = true;
+    const session = {
+      onGeometryChanges: new BeEvent<(changes: Iterable<ModelGeometryChanges>, session: InteractiveEditingSession) => void>(),
+      onEnding: new BeEvent<(session: InteractiveEditingSession) => void>(),
+    } as InteractiveEditingSession;
+    this._tileState = new DynamicState(this, changes, session);
+  }
 
   public get tileState(): RootTileState {
     return this._tileState;
+  }
+
+  public selectStaticTiles(tiles: Tile[], args: TileDrawArgs): void {
+    if (!this._forceElementDraw)
+      this.staticBranch.selectTiles(tiles, args, 0);
   }
 
   public constructor(params: IModelTileParams, tree: IModelTileTree) {
@@ -174,6 +198,7 @@ class RootTile extends Tile {
     };
 
     super(rootParams, tree);
+    this._forceElementDraw = false;
     this.staticBranch = new IModelTile(params, tree);
     this._staticTreeContentRange = tree.contentRange?.clone();
 
@@ -200,7 +225,9 @@ class RootTile extends Tile {
   }
 
   protected _loadChildren(resolve: (children: Tile[] | undefined) => void, _reject: (error: Error) => void): void {
-    const children: Tile[] = [this.staticBranch];
+    const children: Tile[] = [];
+    if (!this._forceElementDraw)
+      children.push(this.staticBranch);
     if (this._tileState.type === "dynamic")
       children.push(this._tileState.rootTile);
 
@@ -236,7 +263,7 @@ class RootTile extends Tile {
     }
 
     // We need to hide any modified elements in the static tiles. Pull their graphics into a separate branch.
-    if (!args.graphics.isEmpty) {
+    if (!args.graphics.isEmpty && !this._forceElementDraw) {
       const staticBranch = new GraphicBranch();
       for (const staticGraphic of args.graphics.entries)
         staticBranch.add(staticGraphic);
@@ -268,7 +295,7 @@ class RootTile extends Tile {
 
     assert(undefined !== this.children);
     if ("dynamic" === this._tileState.type) {
-      assert(2 === this.children.length);
+      assert(this.children.length === (this._forceElementDraw ? 1 : 2));
       this.children.pop();
     } else if ("dynamic" === newState.type) {
       assert(1 === this.children.length);
@@ -324,6 +351,10 @@ export class IModelTileTree extends TileTree {
    */
   private _numStaticTilesSelected = 0;
 
+  public async forceElementDraw(): Promise<void> {
+    return this._rootTile.forceElementDraw();
+  }
+
   public constructor(params: IModelTileTreeParams) {
     super(params);
     this.contentIdQualifier = params.contentIdQualifier;
@@ -359,7 +390,7 @@ export class IModelTileTree extends TileTree {
   protected _selectTiles(args: TileDrawArgs): Tile[] {
     args.markUsed(this._rootTile);
     const tiles: Tile[] = [];
-    this._rootTile.staticBranch.selectTiles(tiles, args, 0);
+    this._rootTile.selectStaticTiles(tiles, args);
     this._numStaticTilesSelected = tiles.length;
 
     if (this._rootTile.tileState.type === "dynamic")
