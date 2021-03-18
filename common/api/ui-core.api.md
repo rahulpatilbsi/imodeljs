@@ -832,6 +832,9 @@ export const flattenChildren: (children: React.ReactNode) => React.ReactNode;
 export function FlexWrapContainer(props: CommonDivProps): JSX.Element;
 
 // @internal
+export function focusIntoContainer(focusContainer: HTMLDivElement, initialFocusElement?: React.RefObject<HTMLElement> | string): boolean;
+
+// @internal
 export function FocusTrap(props: FocusTrapProps): JSX.Element | null;
 
 // @internal
@@ -1897,7 +1900,7 @@ export class SessionUiSettings implements UiSettings {
 }
 
 // @beta
-export const SettingsContainer: ({ tabs, onSettingsTabSelected, currentSettingsTab, settingsManager }: SettingsContainerProps) => JSX.Element;
+export const SettingsContainer: ({ tabs, onSettingsTabSelected, currentSettingsTab, settingsManager, showHeader }: SettingsContainerProps) => JSX.Element;
 
 // @beta (undocumented)
 export interface SettingsContainerProps {
@@ -1907,6 +1910,8 @@ export interface SettingsContainerProps {
     onSettingsTabSelected?: (tab: SettingsTabEntry) => void;
     // (undocumented)
     settingsManager: SettingsManager;
+    // (undocumented)
+    showHeader?: boolean;
     // (undocumented)
     tabs: SettingsTabEntry[];
 }

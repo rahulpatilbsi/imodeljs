@@ -5,26 +5,38 @@ publish: false
 
 ## New Settings UI Features
 
-The @bentley/ui-core package has added the [SettingsManager]($ui-core) class that allows any number of [SettingsProvider]($ui-core) classes to be registered. These providers provide [SettingsTabEntry]($ui-core) definitions used to populate the [SettingsContainer]($ui-core) UI component with setting pages used to manage application settings. These new classes are marked as beta in this release and are subject to minor modifications in future releases.
+### Add Settings Page to set Quantity Formatting Overrides
+
+The [QuantityFormatSettingsPanel]($ui-framework) component has been added to the @bentley/ui-framework package to provide the UI to set both the [PresentationUnitSystem]($presentation-common) and formatting overrides in the [QuantityFormatter]($frontend). This panel can be used in the new [SettingsContainer]($ui-core) UI component. The function `getQuantityFormatsSettingsManagerEntry` will return a [SettingsTabEntry]($ui-core) for use by the [SettingsManager]($ui-core). Below is an example of registering the `QuantityFormatSettingsPanel` with the `SettingsManager`.
+
+```ts
+// Sample settings provider that dynamically adds settings into the setting stage
+export class AppSettingsProvider implements SettingsProvider {
+  public readonly id = "AppSettingsProvider";
+
+  public getSettingEntries(_stageId: string, _stageUsage: string): ReadonlyArray<SettingsTabEntry> | undefined {
+    return [
+      getQuantityFormatsSettingsManagerEntry(10, {availableUnitSystems:new Set(["metric","imperial","usSurvey"])}),
+    ];
+  }
+
+  public static initializeAppSettingProvider() {
+    UiFramework.settingsManager.addSettingsProvider(new AppSettingsProvider());
+  }
+}
+
+```
+
+The `QuantityFormatSettingsPanel` is marked as alpha in this release and is subject to minor modifications in future releases.
+
+## @bentley/imodeljs-quantity package
+
+The alpha classes, interfaces, and definitions in the package `@bentley/imodeljs-quantity` have been updated to beta.
 
 ## Breaking Api Changes
 
-### @bentley/ui-abstract package
+### @bentley/imodeljs-quantity package
 
-Property `onClick` in [LinkElementsInfo]($ui-abstract) was changed to be mandatory. Also, the first [PropertyRecord]($ui-abstract) argument was removed from the method. Suggested ways to resolve:
+#### UnitProps property name change
 
-- If you have a function `myFunction(record: PropertyRecord, text: string)` and use the first argument, the issue can be resolved with a lambda:
-
-  ```ts
-  record.links = {
-    onClick: (text) => myFunction(record, text),
-  };
-  ```
-
-- If you were omitting the `onClick` method to get the default behavior, it can still be achieved by not setting `PropertyRecord.links` at all. It's only valid to expect default click behavior when default matcher is used, but if a custom matcher is used, then the click handled can be as simple as this:
-
-  ```ts
-  record.links = {
-    onClick: (text) => { window.open(text, "_blank"); },
-  };
-  ```
+The interface [UnitProps]($quantity) property `unitFamily` has been renamed to `phenomenon` to be consistent with naming in `ecschema-metadata` package.

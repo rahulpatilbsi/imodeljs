@@ -11,6 +11,7 @@ export * from "./ui-framework/accudraw/AccuDrawCommandItems";
 export * from "./ui-framework/accudraw/AccuDrawDialog";
 export * from "./ui-framework/accudraw/AccuDrawKeyboardShortcuts";
 export * from "./ui-framework/accudraw/AccuDrawPopupManager";
+export * from "./ui-framework/accudraw/AccuDrawUiSettings";
 export * from "./ui-framework/accudraw/AccuDrawWidget";
 export * from "./ui-framework/accudraw/Calculator";
 export * from "./ui-framework/accudraw/CalculatorEngine";
@@ -144,6 +145,8 @@ export * from "./ui-framework/selection/SelectionContextItemDef";
 export * from "./ui-framework/selection/HideIsolateEmphasizeManager";
 export * from "./ui-framework/selection/ClearEmphasisStatusField";
 
+export * from "./ui-framework/settings/quantityformatting/QuantityFormat";
+
 export * from "./ui-framework/shared/ActionButtonItemDef";
 export * from "./ui-framework/shared/AnyItemDef";
 export * from "./ui-framework/shared/CommandItemDef";
@@ -215,6 +218,7 @@ export * from "./ui-framework/tools/CoreToolDefinitions";
 export * from "./ui-framework/tools/FrameworkToolAdmin";
 export * from "./ui-framework/tools/MarkupToolDefinitions";
 export * from "./ui-framework/tools/RestoreLayoutTool";
+export * from "./ui-framework/tools/ToolSettingsTools";
 
 export * from "./ui-framework/uiadmin/FrameworkUiAdmin";
 
@@ -343,6 +347,10 @@ export * from "./ui-framework/zones/ZoneDef";
 /**
  * @docs-group-description State
  * Classes for maintaining state
+ */
+/**
+ * @docs-group-description Settings
+ * Classes and components used by settings pages displayed in the modal settings stage
  */
 /**
  * @docs-group-description StatusBar
