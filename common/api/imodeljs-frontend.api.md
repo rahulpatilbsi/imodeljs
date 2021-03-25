@@ -35,6 +35,7 @@ import { Capabilities } from '@bentley/webgl-compatibility';
 import { Cartographic } from '@bentley/imodeljs-common';
 import { CartographicRange } from '@bentley/imodeljs-common';
 import { CategorySelectorProps } from '@bentley/imodeljs-common';
+import { ChangedEntities } from '@bentley/imodeljs-common';
 import { ClientRequestContext } from '@bentley/bentleyjs-core';
 import { ClipPlane } from '@bentley/geometry-core';
 import { ClipShape } from '@bentley/geometry-core';
@@ -66,12 +67,11 @@ import { EasingFunction } from '@bentley/imodeljs-common';
 import { EcefLocation } from '@bentley/imodeljs-common';
 import { EcefLocationProps } from '@bentley/imodeljs-common';
 import { EdgeArgs } from '@bentley/imodeljs-common';
-import { Editor3dRpcInterfaceWriteOptions } from '@bentley/imodeljs-common';
+import { EditingSessionNotifications } from '@bentley/imodeljs-common';
 import { ElementAlignedBox3d } from '@bentley/imodeljs-common';
 import { ElementGeometryChange } from '@bentley/imodeljs-common';
 import { ElementGraphicsRequestProps } from '@bentley/imodeljs-common';
 import { ElementProps } from '@bentley/imodeljs-common';
-import { ElementsChanged } from '@bentley/imodeljs-common';
 import { Ellipsoid } from '@bentley/geometry-core';
 import { EllipsoidPatch } from '@bentley/geometry-core';
 import { EntityProps } from '@bentley/imodeljs-common';
@@ -96,7 +96,6 @@ import { Frustum } from '@bentley/imodeljs-common';
 import { FrustumPlanes } from '@bentley/imodeljs-common';
 import * as Fuse from 'fuse.js';
 import { GeoCoordinatesResponseProps } from '@bentley/imodeljs-common';
-import { GeometricElement3dProps } from '@bentley/imodeljs-common';
 import { GeometricModel2dProps } from '@bentley/imodeljs-common';
 import { GeometricModel3dProps } from '@bentley/imodeljs-common';
 import { GeometricModelProps } from '@bentley/imodeljs-common';
@@ -131,11 +130,11 @@ import { ImageBufferFormat } from '@bentley/imodeljs-common';
 import { ImageSource } from '@bentley/imodeljs-common';
 import { ImageSourceFormat } from '@bentley/imodeljs-common';
 import { IModel } from '@bentley/imodeljs-common';
-import { IModelChangeNotifications } from '@bentley/imodeljs-common';
 import { IModelClient } from '@bentley/imodelhub-client';
 import { IModelConnectionProps } from '@bentley/imodeljs-common';
 import { IModelCoordinatesResponseProps } from '@bentley/imodeljs-common';
 import { IModelRpcProps } from '@bentley/imodeljs-common';
+import { IModelStatus } from '@bentley/imodeljs-common';
 import { IModelTileTreeProps } from '@bentley/imodeljs-common';
 import { IModelVersion } from '@bentley/imodeljs-common';
 import { IModelVersionProps } from '@bentley/imodeljs-common';
@@ -152,7 +151,6 @@ import { LDFlagValue } from 'ldclient-js';
 import { LightSettings } from '@bentley/imodeljs-common';
 import { LinePixels } from '@bentley/imodeljs-common';
 import { LocalBriefcaseProps } from '@bentley/imodeljs-common';
-import { LockLevel } from '@bentley/imodelhub-client';
 import { LogLevel } from '@bentley/bentleyjs-core';
 import { Loop } from '@bentley/geometry-core';
 import { LowAndHighXY } from '@bentley/geometry-core';
@@ -172,6 +170,7 @@ import { MeshPolyline } from '@bentley/imodeljs-common';
 import { MeshPolylineList } from '@bentley/imodeljs-common';
 import { ModelGeometryChanges } from '@bentley/imodeljs-common';
 import { ModelGeometryChangesProps } from '@bentley/imodeljs-common';
+import { ModelIdAndGeometryGuid } from '@bentley/imodeljs-common';
 import { ModelProps } from '@bentley/imodeljs-common';
 import { ModelQueryParams } from '@bentley/imodeljs-common';
 import { ModelSelectorProps } from '@bentley/imodeljs-common';
@@ -274,6 +273,7 @@ import { Transform } from '@bentley/geometry-core';
 import { TransformProps } from '@bentley/geometry-core';
 import { TransientIdSequence } from '@bentley/bentleyjs-core';
 import { Tweens } from '@bentley/imodeljs-common';
+import { TxnNotifications } from '@bentley/imodeljs-common';
 import { UiAdmin } from '@bentley/ui-abstract';
 import { UnitConversion } from '@bentley/imodeljs-quantity';
 import { UnitProps } from '@bentley/imodeljs-quantity';
@@ -301,7 +301,6 @@ import { XAndY } from '@bentley/geometry-core';
 import { XYAndZ } from '@bentley/geometry-core';
 import { XYZ } from '@bentley/geometry-core';
 import { XYZProps } from '@bentley/geometry-core';
-import { YawPitchRollAngles } from '@bentley/geometry-core';
 
 // @internal
 export class AccuDraw {
@@ -1634,6 +1633,7 @@ export interface BlankConnectionProps {
 
 // @public
 export class BriefcaseConnection extends IModelConnection {
+    protected constructor(props: IModelConnectionProps);
     // @beta
     beginEditingSession(): Promise<InteractiveEditingSession>;
     close(): Promise<void>;
@@ -1659,6 +1659,8 @@ export class BriefcaseConnection extends IModelConnection {
     saveChanges(description?: string): Promise<void>;
     // @beta
     supportsInteractiveEditing(): Promise<boolean>;
+    // @beta
+    readonly txns: BriefcaseTxns;
 }
 
 // @beta
@@ -1669,6 +1671,49 @@ export abstract class BriefcaseNotificationHandler extends NotificationHandler {
     // (undocumented)
     get channelName(): string;
     }
+
+// @beta
+export class BriefcaseTxns extends BriefcaseNotificationHandler implements TxnNotifications {
+    // @internal
+    constructor(iModel: BriefcaseConnection);
+    // @internal (undocumented)
+    get briefcaseChannelName(): IpcAppChannel;
+    // @internal (undocumented)
+    dispose(): void;
+    getRedoString(): Promise<string>;
+    getUndoString(allowCrossSessions?: boolean): Promise<string>;
+    hasPendingTxns(): Promise<boolean>;
+    isRedoPossible(): Promise<boolean>;
+    isUndoPossible(): Promise<boolean>;
+    // @internal (undocumented)
+    notifyAfterUndoRedo(isUndo: boolean): void;
+    // @internal (undocumented)
+    notifyBeforeUndoRedo(isUndo: boolean): void;
+    // @internal (undocumented)
+    notifyChangesApplied(): void;
+    // @internal (undocumented)
+    notifyCommit(): void;
+    // @internal (undocumented)
+    notifyCommitted(): void;
+    // @internal (undocumented)
+    notifyElementsChanged(changed: ChangedEntities): void;
+    // @internal (undocumented)
+    notifyGeometryGuidsChanged(changes: ModelIdAndGeometryGuid[]): void;
+    // @internal (undocumented)
+    notifyModelsChanged(changed: ChangedEntities): void;
+    readonly onAfterUndoRedo: BeEvent<(isUndo: boolean) => void>;
+    readonly onBeforeUndoRedo: BeEvent<(isUndo: boolean) => void>;
+    readonly onChangesApplied: BeEvent<() => void>;
+    readonly onCommit: BeEvent<() => void>;
+    readonly onCommitted: BeEvent<() => void>;
+    readonly onElementsChanged: BeEvent<(changes: Readonly<ChangedEntities>) => void>;
+    readonly onModelGeometryChanged: BeEvent<(changes: ReadonlyArray<ModelIdAndGeometryGuid>) => void>;
+    readonly onModelsChanged: BeEvent<(changes: Readonly<ChangedEntities>) => void>;
+    reinstateTxn(): Promise<IModelStatus>;
+    reverseAll(): Promise<IModelStatus>;
+    reverseSingleTxn(): Promise<IModelStatus>;
+    reverseTxns(numOperations: number, allowCrossSessions?: boolean): Promise<IModelStatus>;
+}
 
 // @internal (undocumented)
 export type CachedDecoration = {
@@ -2551,14 +2596,8 @@ export class EditingFunctions {
     constructor(connection: IModelConnection);
     get categories(): EditingFunctions.CategoryEditor;
     get codes(): EditingFunctions.Codes;
-    get concurrencyControl(): EditingFunctions.ConcurrencyControl;
-    deleteElements(ids: Id64Array): Promise<void>;
-    hasPendingTxns(): Promise<boolean>;
-    hasUnsavedChanges(): Promise<boolean>;
     get models(): EditingFunctions.ModelEditor;
-    saveChanges(description?: string): Promise<void>;
-    updateProjectExtents(newExtents: AxisAlignedBox3d): Promise<void>;
-}
+    }
 
 // @alpha @deprecated (undocumented)
 export namespace EditingFunctions {
@@ -2572,12 +2611,6 @@ export namespace EditingFunctions {
         makeCode(specName: string, scope: Id64String, value: string): Promise<CodeProps>;
         makeModelCode(scope: Id64String, value: string): Promise<CodeProps>;
     }
-    // @deprecated
-    export class ConcurrencyControl {
-        constructor(c: IModelConnection);
-        lockModel(modelId: Id64String, level?: LockLevel): Promise<void>;
-        request(): Promise<void>;
-        }
     // @deprecated
     export class ModelEditor {
         constructor(c: IModelConnection);
@@ -2731,23 +2764,6 @@ export class ElementAgenda {
     // (undocumented)
     remove(arg: Id64Arg): boolean;
     setSource(val: ModifyElementSource): void;
-}
-
-// @alpha
-export class ElementEditor3d {
-    applyTransform(tprops: TransformProps): Promise<any>;
-    createElement(props: GeometricElement3dProps, origin?: Point3d, angles?: YawPitchRollAngles, geometry?: any): Promise<void>;
-    end(): Promise<void>;
-    // (undocumented)
-    readonly iModelConnection: IModelConnection;
-    popState(): Promise<void>;
-    pushState(): Promise<void>;
-    restart(): Promise<void>;
-    static start(iModelConnection: IModelConnection): Promise<ElementEditor3d>;
-    startModifyingElements(elementIds: Id64Array): Promise<void>;
-    write(opts?: Editor3dRpcInterfaceWriteOptions): Promise<GeometricElement3dProps[] | Id64Array | void>;
-    writeReturningIds(): Promise<Id64Array>;
-    writeReturningProps(wantGeom?: boolean): Promise<GeometricElement3dProps[]>;
 }
 
 // @public (undocumented)
@@ -3371,8 +3387,6 @@ export interface FrameRenderData {
 // @public
 export enum FrontendLoggerCategory {
     Authorization = "imodeljs-frontend.Authorization",
-    // @alpha
-    EditorConnection = "imodeljs-frontend.EditorConnection",
     EventSource = "imodeljs-frontend.EventSource",
     FeatureToggle = "imodeljs-frontend.FeatureToggles",
     // @alpha
@@ -3914,6 +3928,7 @@ export class GridDisplaySettings {
     static clippingOption: 0 | 1;
     static cullingOption: 0 | 1 | 2;
     static cullingPerspectiveOption: 0 | 1 | 2;
+    static lineLimiter: number;
     static lineTransparency: number;
     static minFadeSeparation: number;
     static minPerspectiveSeparation: number;
@@ -4719,7 +4734,7 @@ export interface InstancedGraphicParams {
 }
 
 // @beta
-export class InteractiveEditingSession extends BriefcaseNotificationHandler implements IModelChangeNotifications {
+export class InteractiveEditingSession extends BriefcaseNotificationHandler implements EditingSessionNotifications {
     // @internal
     static begin(imodel: BriefcaseConnection): Promise<InteractiveEditingSession>;
     // (undocumented)
@@ -4731,11 +4746,8 @@ export class InteractiveEditingSession extends BriefcaseNotificationHandler impl
     // @internal (undocumented)
     get isDisposed(): boolean;
     // @internal (undocumented)
-    notifyElementsChanged(changed: ElementsChanged): void;
-    // @internal (undocumented)
     notifyGeometryChanged(props: ModelGeometryChangesProps[]): void;
     static readonly onBegin: BeEvent<(session: InteractiveEditingSession) => void>;
-    readonly onElementChanges: BeEvent<(changes: ElementsChanged, iModel: BriefcaseConnection) => void>;
     readonly onEnded: BeEvent<(session: InteractiveEditingSession) => void>;
     readonly onEnding: BeEvent<(session: InteractiveEditingSession) => void>;
     readonly onGeometryChanges: BeEvent<(changes: Iterable<ModelGeometryChanges>, session: InteractiveEditingSession) => void>;
@@ -5288,7 +5300,11 @@ export interface MapLayerSetting {
 
 // @internal (undocumented)
 export class MapLayerSettingsService {
+    // (undocumented)
+    static deleteSharedSettingsByName(name: string, projectId: GuidString, iModelId: GuidString): Promise<boolean>;
     static getSourcesFromSettingsService(projectId: GuidString, iModelId: GuidString): Promise<MapLayerSource[]>;
+    // (undocumented)
+    static readonly onCustomLayerNameRemoved: BeEvent<(name: string) => void>;
     // (undocumented)
     static readonly onNewCustomLayerSource: BeEvent<(source: MapLayerSource) => void>;
     // (undocumented)
@@ -5347,7 +5363,11 @@ export class MapLayerSources {
     // (undocumented)
     findByName(name: string, baseMap?: boolean): MapLayerSource | undefined;
     // (undocumented)
+    static getInstance(): MapLayerSources | undefined;
+    // (undocumented)
     get layers(): MapLayerSource[];
+    // (undocumented)
+    static removeLayerByName(name: string): boolean;
     }
 
 // @internal (undocumented)
@@ -7545,8 +7565,6 @@ export class RemoteBriefcaseConnection extends CheckpointConnection {
     attachChangeCache(): Promise<void>;
     // @internal
     changeCacheAttached(): Promise<boolean>;
-    // @internal
-    get editing(): EditingFunctions;
     // (undocumented)
     static open(contextId: string, iModelId: string, openMode?: OpenMode, version?: IModelVersion): Promise<RemoteBriefcaseConnection>;
     pullAndMergeChanges(): Promise<void>;
@@ -8118,6 +8136,7 @@ export namespace RenderSystem {
         // @internal
         disabledExtensions?: WebGLExtensionName[];
         displaySolarShadows?: boolean;
+        // @public
         doIdleWork?: boolean;
         dpiAwareLOD?: boolean;
         dpiAwareViewports?: boolean;
