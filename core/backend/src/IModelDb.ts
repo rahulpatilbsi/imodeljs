@@ -616,7 +616,7 @@ export abstract class IModelDb extends IModel {
         if (row.id !== undefined) {
           ids.add(row.id);
           if (ids.size > IModelDb.maxLimit) {
-            throw new IModelError(IModelStatus.BadRequest, "Max LIMIT exceeded in SELECT statement", Logger.logError, loggerCategory);
+            throw new IModelError(IModelStatus.BadRequest, "Max LIMIT exceeded in SELECT statement");
           }
         }
       }
@@ -845,16 +845,16 @@ export abstract class IModelDb extends IModel {
   public static openDgnDb(file: { path: string, key?: string }, openMode: OpenMode, upgradeOptions?: UpgradeOptions, props?: string): IModelJsNative.DgnDb {
     file.key = file.key ?? Guid.createValue();
     if (this.tryFindByKey(file.key))
-      throw new IModelError(IModelStatus.AlreadyOpen, `key [${file.key}] for file [${file.path}] is already in use`, Logger.logError, loggerCategory);
+      throw new IModelError(IModelStatus.AlreadyOpen, `key [${file.key}] for file [${file.path}] is already in use`);
 
     const isUpgradeRequested = upgradeOptions?.domain === DomainOptions.Upgrade || upgradeOptions?.profile === ProfileOptions.Upgrade;
     if (isUpgradeRequested && openMode !== OpenMode.ReadWrite)
-      throw new IModelError(IModelStatus.UpgradeFailed, "Cannot upgrade a Readonly Db", Logger.logError, loggerCategory);
+      throw new IModelError(IModelStatus.UpgradeFailed, "Cannot upgrade a Readonly Db");
 
     const nativeDb = new IModelHost.platform.DgnDb();
     const status = nativeDb.openIModel(file.path, openMode, upgradeOptions, props);
     if (DbResult.BE_SQLITE_OK !== status)
-      throw new IModelError(status, `Could not open iModel ${file.path}`, Logger.logError, loggerCategory);
+      throw new IModelError(status, `Could not open iModel ${file.path}`);
 
     return nativeDb;
   }
@@ -929,7 +929,8 @@ export abstract class IModelDb extends IModel {
   /** @internal */
   public insertCodeSpec(codeSpec: CodeSpec): Id64String {
     const { error, result } = this.nativeDb.insertCodeSpec(codeSpec.name, JSON.stringify(codeSpec.properties));
-    if (error) throw new IModelError(error.status, `inserting CodeSpec ${codeSpec}`, Logger.logWarning, loggerCategory);
+    if (error)
+      throw new IModelError(error.status, `error inserting CodeSpec ${codeSpec}`);
     return Id64.fromJSON(result);
   }
 
@@ -1017,11 +1018,11 @@ export abstract class IModelDb extends IModel {
 
     const className = classFullName.split(":");
     if (className.length !== 2)
-      throw new IModelError(IModelStatus.BadArg, "Invalid classFullName", Logger.logError, loggerCategory, () => ({ ...this.getRpcProps(), classFullName }));
+      throw new IModelError(IModelStatus.BadArg, `Invalid classFullName: ${classFullName}`);
 
     const val = this.nativeDb.getECClassMetaData(className[0], className[1]);
     if (val.error)
-      throw new IModelError(val.error.status, `Error getting class meta data for: ${classFullName}`, Logger.logError, loggerCategory, () => ({ ...this.getRpcProps(), classFullName }));
+      throw new IModelError(val.error.status, `Error getting class meta data for: ${classFullName}`);
 
     const metaData = new EntityMetaData(JSON.parse(val.result!));
     this.classMetaDataRegistry.add(classFullName, metaData);
@@ -1419,7 +1420,7 @@ export namespace IModelDb { // eslint-disable-line no-redeclare
 
       const val = this._iModel.nativeDb.insertModel(json);
       if (val.error)
-        throw new IModelError(val.error.status, "inserting model", Logger.logWarning, loggerCategory);
+        throw new IModelError(val.error.status, "inserting model");
 
       json.id = props.id = Id64.fromJSON(val.result!.id);
       jsClass.onInserted(json.id, this._iModel);
@@ -1437,7 +1438,7 @@ export namespace IModelDb { // eslint-disable-line no-redeclare
 
       const error = this._iModel.nativeDb.updateModel(json);
       if (error !== IModelStatus.Success)
-        throw new IModelError(error, `updating model id=${json.id}`, Logger.logWarning, loggerCategory);
+        throw new IModelError(error, `updating model id=${json.id}`);
 
       jsClass.onUpdated(json, this._iModel);
     }
@@ -1454,7 +1455,7 @@ export namespace IModelDb { // eslint-disable-line no-redeclare
     public updateGeometryGuid(modelId: Id64String): void {
       const error = this._iModel.nativeDb.updateModelGeometryGuid(modelId);
       if (error !== IModelStatus.Success)
-        throw new IModelError(error, `updating geometry guid for model ${modelId}`, Logger.logWarning, loggerCategory);
+        throw new IModelError(error, `updating geometry guid for model ${modelId}`);
     }
 
     /** Delete one or more existing models.
@@ -1469,7 +1470,7 @@ export namespace IModelDb { // eslint-disable-line no-redeclare
 
         const error = this._iModel.nativeDb.deleteModel(id);
         if (error !== IModelStatus.Success)
-          throw new IModelError(error, `deleting model id ${id}`, Logger.logWarning, loggerCategory);
+          throw new IModelError(error, `deleting model id ${id}`);
 
         jsClass.onDeleted(props, this._iModel);
       });
@@ -1590,10 +1591,10 @@ export namespace IModelDb { // eslint-disable-line no-redeclare
      */
     public queryElementIdByCode(code: Code): Id64String | undefined {
       if (Id64.isInvalid(code.spec))
-        throw new IModelError(IModelStatus.InvalidCodeSpec, "Invalid CodeSpec", Logger.logWarning, loggerCategory);
+        throw new IModelError(IModelStatus.InvalidCodeSpec, "Invalid CodeSpec");
 
       if (code.value === undefined)
-        throw new IModelError(IModelStatus.InvalidCode, "Invalid Code", Logger.logWarning, loggerCategory);
+        throw new IModelError(IModelStatus.InvalidCode, "Invalid Code");
 
       return this._iModel.withPreparedStatement(`SELECT ECInstanceId FROM ${Element.classFullName} WHERE CodeSpec.Id=? AND CodeScope.Id=? AND CodeValue=?`, (stmt: ECSqlStatement) => {
         stmt.bindId(1, code.spec);
@@ -1638,7 +1639,7 @@ export namespace IModelDb { // eslint-disable-line no-redeclare
 
       const val = iModel.nativeDb.insertElement(json);
       if (val.error)
-        throw new IModelError(val.error.status, "Error inserting element", Logger.logWarning, loggerCategory, () => ({ classFullName: json.classFullName }));
+        throw new IModelError(val.error.status, `Error inserting element, class: ${json.classFullName}`);
 
       elProps.id = json.id = Id64.fromJSON(val.result!.id);
       jsClass.onInserted(json, iModel);
@@ -1660,7 +1661,7 @@ export namespace IModelDb { // eslint-disable-line no-redeclare
 
       const stat = iModel.nativeDb.updateElement(json);
       if (stat !== IModelStatus.Success)
-        throw new IModelError(stat, "Error updating element", Logger.logWarning, loggerCategory, () => ({ elementId: json.id }));
+        throw new IModelError(stat, `Error updating element, id: ${json.id}`);
 
       jsClass.onUpdated(json, iModel);
     }
@@ -1686,7 +1687,7 @@ export namespace IModelDb { // eslint-disable-line no-redeclare
 
         const error = iModel.nativeDb.deleteElement(id);
         if (error !== IModelStatus.Success)
-          throw new IModelError(error, "Error deleting element", Logger.logWarning, loggerCategory, () => ({ elementId: props.id }));
+          throw new IModelError(error, `Error deleting element, id: ${props.id}`);
 
         jsClass.onDeleted(props, iModel);
       });
@@ -1704,9 +1705,9 @@ export namespace IModelDb { // eslint-disable-line no-redeclare
      */
     public deleteDefinitionElements(definitionElementIds: Id64Array): Id64Set {
       const usageInfo = this._iModel.nativeDb.queryDefinitionElementUsage(definitionElementIds);
-      if (!usageInfo) {
-        throw new IModelError(IModelStatus.BadRequest, "Error querying for DefinitionElement usage", Logger.logError, loggerCategory);
-      }
+      if (!usageInfo)
+        throw new IModelError(IModelStatus.BadRequest, "Error querying for DefinitionElement usage");
+
       const usedIdSet: Id64Set = usageInfo.usedIds ? Id64.toIdSet(usageInfo.usedIds) : new Set<Id64String>();
       const deleteIfUnused = (ids: Id64Array | undefined, used: Id64Set): void => {
         if (ids) { ids.forEach((id) => { if (!used.has(id)) { this._iModel.elements.deleteElement(id); } }); }
@@ -1760,7 +1761,7 @@ export namespace IModelDb { // eslint-disable-line no-redeclare
      * @throws [[IModelError]]
      */
     public queryChildren(elementId: Id64String): Id64String[] {
-      const sql = `SELECT ECInstanceId FROM ${Element.classFullName} WHERE Parent.Id=:elementId`;
+      const sql = `SELECT ECInstanceId FROM BisCore:Element WHERE Parent.Id=:elementId`;
       return this._iModel.withPreparedStatement(sql, (statement: ECSqlStatement): Id64String[] => {
         statement.bindId("elementId", elementId);
         const childIds: Id64String[] = [];
@@ -1779,7 +1780,7 @@ export namespace IModelDb { // eslint-disable-line no-redeclare
         return false; // Special case since the RepositoryModel does not sub-model the root Subject
       }
       // A sub-model will have the same Id value as the element it is describing
-      const sql = `SELECT ECInstanceId FROM ${Model.classFullName} WHERE ECInstanceId=:elementId`;
+      const sql = `SELECT ECInstanceId FROM BisCore:Model WHERE ECInstanceId=:elementId`;
       return this._iModel.withPreparedStatement(sql, (statement: ECSqlStatement): boolean => {
         statement.bindId("elementId", elementId);
         return DbResult.BE_SQLITE_ROW === statement.step();
@@ -1826,7 +1827,7 @@ export namespace IModelDb { // eslint-disable-line no-redeclare
         return undefined;
       });
       if (undefined === aspect) {
-        throw new IModelError(IModelStatus.NotFound, "ElementAspect not found", Logger.logError, loggerCategory, () => ({ aspectInstanceId, aspectClassName }));
+        throw new IModelError(IModelStatus.NotFound, `ElementAspect not found, id: ${aspectInstanceId}, class: ${aspectClassName}`);
       }
       return this._iModel.constructEntity<ElementAspect>(aspect);
     }
@@ -1841,7 +1842,7 @@ export namespace IModelDb { // eslint-disable-line no-redeclare
         return (DbResult.BE_SQLITE_ROW === statement.step()) ? statement.getValue(0).getClassNameForClassId().replace(".", ":") : undefined;
       });
       if (undefined === aspectClassFullName) {
-        throw new IModelError(IModelStatus.NotFound, "ElementAspect not found", Logger.logError, loggerCategory, () => ({ aspectInstanceId }));
+        throw new IModelError(IModelStatus.NotFound, `ElementAspect not found, id: ${aspectInstanceId}`);
       }
       return this._queryAspect(aspectInstanceId, aspectClassFullName);
     }
@@ -1872,7 +1873,7 @@ export namespace IModelDb { // eslint-disable-line no-redeclare
 
       const status = iModel.nativeDb.insertElementAspect(aspectProps);
       if (status !== IModelStatus.Success)
-        throw new IModelError(status, "Error inserting ElementAspect", Logger.logWarning, loggerCategory, () => ({ classFullName: aspectProps.classFullName }));
+        throw new IModelError(status, `Error inserting ElementAspect, class: ${aspectProps.classFullName}`);
 
       jsClass.onInserted(aspectProps, iModel);
     }
@@ -1888,7 +1889,7 @@ export namespace IModelDb { // eslint-disable-line no-redeclare
 
       const status = iModel.nativeDb.updateElementAspect(aspectProps as any);
       if (status !== IModelStatus.Success)
-        throw new IModelError(status, "Error updating ElementAspect", Logger.logWarning, loggerCategory, () => ({ aspectInstanceId: aspectProps.id }));
+        throw new IModelError(status, `Error updating ElementAspect, id: ${aspectProps.id}`);
 
       jsClass.onUpdated(aspectProps, iModel);
     }
@@ -1906,7 +1907,7 @@ export namespace IModelDb { // eslint-disable-line no-redeclare
 
         const status = iModel.nativeDb.deleteElementAspect(aspectInstanceId);
         if (status !== IModelStatus.Success)
-          throw new IModelError(status, "Error deleting ElementAspect", Logger.logWarning, loggerCategory, () => ({ aspectInstanceId }));
+          throw new IModelError(status, `Error deleting ElementAspect, id: ${aspectInstanceId}`);
 
         jsClass.onDeleted(aspectProps, iModel);
       });
@@ -2502,11 +2503,11 @@ export class SnapshotDb extends IModelDb {
     const optionsString = JSON.stringify(options);
     let status = nativeDb.createIModel(filePath, optionsString);
     if (DbResult.BE_SQLITE_OK !== status)
-      throw new IModelError(status, `Could not create snapshot iModel ${filePath}`, Logger.logError, loggerCategory);
+      throw new IModelError(status, `Could not create snapshot iModel ${filePath}`);
 
     status = nativeDb.resetBriefcaseId(BriefcaseIdValue.Unassigned);
     if (DbResult.BE_SQLITE_OK !== status)
-      throw new IModelError(status, `Could not set briefcaseId for snapshot iModel ${filePath}`, Logger.logError, loggerCategory);
+      throw new IModelError(status, `Could not set briefcaseId for snapshot iModel ${filePath}`);
 
     const snapshotDb = new SnapshotDb(nativeDb, Guid.createValue());
     if (options.createClassViews)
@@ -2532,17 +2533,17 @@ export class SnapshotDb extends IModelDb {
     if (options?.password) {
       const status = IModelHost.platform.DgnDb.encryptDb(snapshotFile, optionsString!);
       if (DbResult.BE_SQLITE_OK !== status)
-        throw new IModelError(status, "Problem encrypting snapshot iModel", Logger.logError, loggerCategory);
+        throw new IModelError(status, "Problem encrypting snapshot iModel");
     } else {
       const status = IModelHost.platform.DgnDb.vacuum(snapshotFile);
       if (DbResult.BE_SQLITE_OK !== status) {
-        throw new IModelError(status, "Error initializing snapshot iModel", Logger.logError, loggerCategory);
+        throw new IModelError(status, "Error initializing snapshot iModel");
       }
     }
     const nativeDb = new IModelHost.platform.DgnDb();
     const result = nativeDb.openIModel(snapshotFile, OpenMode.ReadWrite, undefined, optionsString);
     if (DbResult.BE_SQLITE_OK !== result)
-      throw new IModelError(result, `Could not open iModel ${snapshotFile}`, Logger.logError, loggerCategory);
+      throw new IModelError(result, `Could not open iModel ${snapshotFile}`);
 
     // Replace iModelId if seedFile is a snapshot, preserve iModelId if seedFile is an iModelHub-managed briefcase
     if (!BriefcaseManager.isValidBriefcaseId(nativeDb.getBriefcaseId()))
@@ -2622,7 +2623,7 @@ export class SnapshotDb extends IModelDb {
    */
   public async reattachDaemon(requestContext: AuthorizedClientRequestContext): Promise<void> {
     if (!this._changeSetId)
-      throw new IModelError(IModelStatus.WrongIModel, `SnapshotDb is not a checkpoint`, Logger.logError, loggerCategory);
+      throw new IModelError(IModelStatus.WrongIModel, `SnapshotDb is not a checkpoint`);
     await V2CheckpointManager.attach({ requestContext, contextId: this.contextId!, iModelId: this.iModelId, changeSetId: this._changeSetId });
   }
 
@@ -2631,7 +2632,7 @@ export class SnapshotDb extends IModelDb {
     super.beforeClose();
     if (this._createClassViewsOnClose) { // check for flag set during create
       if (BentleyStatus.SUCCESS !== this.nativeDb.createClassViewsInDb()) {
-        throw new IModelError(IModelStatus.SQLiteError, "Error creating class views", Logger.logError, loggerCategory);
+        throw new IModelError(IModelStatus.SQLiteError, "Error creating class views");
       } else {
         this.saveChanges();
       }
@@ -2693,7 +2694,7 @@ export class StandaloneDb extends IModelDb {
     const argsString = JSON.stringify(args);
     let status = nativeDb.createIModel(filePath, argsString);
     if (DbResult.BE_SQLITE_OK !== status)
-      throw new IModelError(status, `Could not create standalone iModel: ${filePath}`, Logger.logError, loggerCategory);
+      throw new IModelError(status, `Could not create standalone iModel: ${filePath}`);
 
     nativeDb.saveLocalValue(IModelDb._edit, undefined === args.allowEdit ? "" : args.allowEdit);
     nativeDb.saveProjectGuid(Guid.empty);
@@ -2701,7 +2702,7 @@ export class StandaloneDb extends IModelDb {
     status = nativeDb.resetBriefcaseId(BriefcaseIdValue.Unassigned);
     if (DbResult.BE_SQLITE_OK !== status) {
       nativeDb.closeIModel();
-      throw new IModelError(status, `Could not set briefcaseId for iModel:  ${filePath}`, Logger.logError, loggerCategory);
+      throw new IModelError(status, `Could not set briefcaseId for iModel:  ${filePath}`);
     }
 
     nativeDb.saveChanges();
@@ -2740,10 +2741,10 @@ export class StandaloneDb extends IModelDb {
       const projectId = nativeDb.queryProjectGuid();
       const briefcaseId = nativeDb.getBriefcaseId();
       if (projectId !== Guid.empty || !BriefcaseManager.isStandaloneBriefcaseId(briefcaseId))
-        throw new IModelError(IModelStatus.WrongIModel, `${filePath} is not a Standalone db. projectId=${projectId}, briefcaseId=${briefcaseId}`, Logger.logError, loggerCategory);
+        throw new IModelError(IModelStatus.WrongIModel, `${filePath} is not a Standalone db. projectId=${projectId}, briefcaseId=${briefcaseId}`);
 
       if (openMode === OpenMode.ReadWrite && (undefined === nativeDb.queryLocalValue(IModelDb._edit)))
-        throw new IModelError(IModelStatus.ReadOnly, `${filePath} is not editable`, Logger.logError, loggerCategory);
+        throw new IModelError(IModelStatus.ReadOnly, `${filePath} is not editable`);
     } catch (error) {
       nativeDb.closeIModel();
       throw error;
