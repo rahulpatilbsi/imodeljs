@@ -59,6 +59,7 @@ export * from "./map/ImageryProviders/MapBoxLayerImageryProvider";
 export * from "./map/ImageryProviders/TileUrlImageryProvider";
 export * from "./map/ImageryProviders/WmsMapLayerImageryProvider";
 export * from "./map/ImageryProviders/WmtsMapLayerImageryProvider";
+export * from "./map/EsriFeatureServerProvider";
 export * from "./map/MapLayerImageryFormats";
 export * from "./map/MapLayerTileTreeReference";
 export * from "./map/MapTileTree";

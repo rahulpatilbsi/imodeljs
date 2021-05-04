@@ -3,10 +3,11 @@
 * See LICENSE.md in the project root for license terms and full copyright notice.
 *--------------------------------------------------------------------------------------------*/
 
+// import { AttachWmsMapLayerByUrlTool } from "@bentley/frontend-devtools";
 import { Point3d } from "@bentley/geometry-core";
 import { ColorDef } from "@bentley/imodeljs-common";
-import {
-  BeButtonEvent, EventHandled, IModelApp, NotifyMessageDetails, OutputMessagePriority, PrimitiveTool, ToolAssistance, ToolAssistanceImage,
+import {BeButtonEvent,
+  EsriFeatureProvider, EsriFeatureState, EventHandled, IModelApp, NotifyMessageDetails, OutputMessagePriority, PrimitiveTool, ToolAssistance, ToolAssistanceImage,
 } from "@bentley/imodeljs-frontend";
 import { DialogItemValue, DialogPropertySyncItem } from "@bentley/ui-abstract";
 
@@ -41,7 +42,44 @@ export class Tool1 extends PrimitiveTool {
   }
 
   public requireWriteableTarget(): boolean { return false; }
-  public onPostInstall() { super.onPostInstall(); this.setupAndPromptForNextAction(); }
+  public onPostInstall() {
+    super.onPostInstall(); this.setupAndPromptForNextAction();
+
+    // ********************************************
+    const vp = IModelApp.viewManager.selectedView;
+    if (vp &&  vp.iModel) {
+      const provider = new EsriFeatureProvider(new EsriFeatureState(vp.iModel));
+      vp?.addTiledGraphicsProvider(provider);
+    }
+
+    // ********************************************
+
+    // EsriFeatureServerProvider()
+    // this._tiledGraphicsProvider = await createSectionGraphicsProvider(marker.state);
+    // this.viewport.addTiledGraphicsProvider(this._tiledGraphicsProvider);
+
+    // WMS
+    // const mlTool = new AttachWmsMapLayerByUrlTool();
+    // const succeeded = mlTool.parseAndRun("https://naou37251.bentley.com/MapRenderingEngine/continents.map", "WmsTool1");
+    // const succeeded = mlTool.parseAndRun("https://qbc-awqa04/MapRenderingEngine/continents.map", "WmsTool1");
+
+    // ArcGis Mapserver
+    // const mlTool = new AttachArcGISMapLayerByUrlTool();
+    // let succeeded = mlTool.parseAndRun("https://ws4-18.myloadspring.com/arcgis/rest/services/ZZZ_Test/ALIGN_TestMapService_BentleyiTwin_EPSG3857/MapServer", "ArcgisToken", "marjolaine.cayer_bentley", "1573ofW1ght!");
+    // const succeeded = mlTool.parseAndRun("https://dtlgeoarcgis.adtl.com/server/rest/services/SampleWorldCities/MapServer", "SampleWorldCities2", "test", "test");
+
+    // WMTS
+    // const mlTool = new AttachWmtsMapLayerByUrlTool();
+    // let succeeded = mlTool.parseAndRun("https://basemap.nationalmap.gov/arcgis/rest/services/USGSHydroCached/MapServer/WMTS", "WmtsTool1");
+    // let succeeded = mlTool.parseAndRun("https://tiles.maps.eox.at/wmts", "WmtsTool1");
+    // let succeeded = mlTool.parseAndRun("https://services.ga.gov.au/gis/great-artesian-basin/gwc/service/wmts", "WmtsTool1");
+    // let succeeded = mlTool.parseAndRun("https://tpwd.texas.gov/arcgis/rest/services/Vegetation_Mapping/Texas_Ecological_Mapping_Systems_Data/mapserver/WMTS", "WmtsTool1");
+    // const mlTool = new AttachArcGISMapLayerByUrlTool();
+    // let succeeded = mlTool.parseAndRun("https://services7.arcgis.com/H8mBAiqYdte7PEdC/ArcGIS/rest/services/Snakegrid_WMAS_TL/MapServer", "Snakegrid");
+    // if (!succeeded)
+    //  throw new Error();
+
+  }
   public onUnsuspend(): void { this.provideToolAssistance(); }
 
   /** Establish current tool state and initialize drawing aides following onPostInstall, onDataButtonDown, onUndoPreviousStep, or other events that advance or back up the current tool state.
