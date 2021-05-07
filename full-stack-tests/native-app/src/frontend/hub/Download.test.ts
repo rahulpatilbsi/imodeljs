@@ -3,13 +3,14 @@
 * See LICENSE.md in the project root for license terms and full copyright notice.
 *--------------------------------------------------------------------------------------------*/
 import { assert } from "chai";
-import { BeDuration, GuidString } from "@bentley/bentleyjs-core";
+import { BeDuration, GuidString, StopWatch } from "@bentley/bentleyjs-core";
 import { ElectronApp } from "@bentley/electron-manager/lib/ElectronFrontend";
 import { IModelVersion, SyncMode } from "@bentley/imodeljs-common";
 import { BriefcaseConnection, NativeApp } from "@bentley/imodeljs-frontend";
 import { ProgressInfo } from "@bentley/itwin-client";
 import { usingOfflineScope } from "../HttpRequestHook";
 import { NativeAppTest } from "../NativeAppTest";
+import { timeLog } from "console";
 
 describe("NativeApp Download (#integration)", () => {
   let testProjectId: GuidString;
@@ -59,21 +60,44 @@ describe("NativeApp Download (#integration)", () => {
     });
   });
 
-  it("Should be able to cancel download (#integration)", async () => {
+  it.only("Should be able to cancel download (#integration)", async () => {
     const locTestIModelId = await NativeAppTest.getTestIModelId(testProjectId, "Stadium Dataset 1");
-    const downloader = await NativeApp.requestDownloadBriefcase(testProjectId, locTestIModelId, { syncMode: SyncMode.PullOnly });
+    console.log("request");
 
-    let cancelled1 = false;
-    let cancelled2 = false;
-    void BeDuration.fromSeconds(.5).executeAfter(async () => { cancelled1 = await downloader.requestCancel(); });
+    const watch = new StopWatch("", true);
+
+    const cancelCalled = false;
+    const requestVal = false;
+    let downloadAborted = false;
+    let events = 0;
+    let loaded = 0;
+    const calls: string[] = [];
+    const downloader = await NativeApp.requestDownloadBriefcase(testProjectId, locTestIModelId, { syncMode: SyncMode.PullOnly }, IModelVersion.latest(),
+      (progress: ProgressInfo) => {
+        assert.isNumber(progress.loaded);
+        assert.isNumber(progress.total);
+        assert.isTrue(progress.loaded >= loaded);
+        assert.isTrue(progress.total! >= progress.loaded);
+        loaded = progress.loaded;
+        events++;
+        calls.push(`progress ${progress.loaded} ${progress.total} elapsed = ${watch.elapsedSeconds}`);
+      });
+    console.log("requested");
+
     try {
+      console.log("waiting ", watch.elapsedSeconds);
       await downloader.downloadPromise;
+      console.log("done download ", watch.elapsedSeconds);
     } catch (err) {
-      cancelled2 = true;
+      downloadAborted = true;
     }
+    console.log("after wait ", watch.elapsedSeconds);
+    console.log("calls = ", calls);
     await NativeApp.deleteBriefcase(downloader.fileName);
-    assert.isTrue(cancelled1);
-    assert.isTrue(cancelled2);
+    assert.isTrue(events !== 0);
+    assert.isTrue(cancelCalled, "cancel should be called");
+    assert.isTrue(requestVal, "cancelRequest should succeed");
+    assert.isTrue(downloadAborted, "download should abort");
   });
 
 });

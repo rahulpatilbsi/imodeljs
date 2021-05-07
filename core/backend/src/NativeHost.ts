@@ -133,6 +133,7 @@ class NativeAppHandler extends IpcHandler implements NativeAppFunctions {
 
   public async requestCancelDownloadBriefcase(fileName: string): Promise<boolean> {
     const job = Downloads.isInProgress(fileName);
+    console.log(`job=${job}`);
     if (job)
       (job.request as any).abort = 1;
     return job !== undefined;

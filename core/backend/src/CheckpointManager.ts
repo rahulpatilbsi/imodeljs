@@ -121,7 +121,6 @@ export class V2CheckpointManager {
       if (checkpoint.expectV2)
         Logger.logError(loggerCategory, "Invalid config: BLOCKCACHE_DIR is not set");
 
-      throw new IModelError(IModelStatus.BadRequest, "Invalid config: BLOCKCACHE_DIR is not set");
     }
 
     const checkpointQuery = new CheckpointV2Query().byChangeSetId(changeSetId).selectContainerAccessKey();
@@ -328,8 +327,11 @@ export class CheckpointManager {
 
     try {
       // first see if there's a V2 checkpoint available.
-      return await V2CheckpointManager.downloadCheckpoint(request);
+      const cp = await V2CheckpointManager.downloadCheckpoint(request);
+      console.log("successfully downloaded v2 checkpoint ", request.localFile);
+      return cp;
     } catch (error) {
+      console.log("v2 err = ", error);
       // TODO: check to see if the error is "not available" and keep going. Otherwise rethrow error
     }
 
