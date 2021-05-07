@@ -116,28 +116,21 @@ export class V2CheckpointManager {
     const { requestContext, iModelId, changeSetId } = checkpoint;
 
     requestContext.enter();
-    const bcvDaemonCachePath = process.env.BLOCKCACHE_DIR;
-    if (!bcvDaemonCachePath) {
-      if (checkpoint.expectV2)
-        Logger.logError(loggerCategory, "Invalid config: BLOCKCACHE_DIR is not set");
-
-    }
-
     const checkpointQuery = new CheckpointV2Query().byChangeSetId(changeSetId).selectContainerAccessKey();
     const checkpoints = await IModelHost.iModelClient.checkpointsV2.get(requestContext, iModelId, checkpointQuery);
     requestContext.enter();
 
     if (checkpoints.length < 1)
-      throw new IModelError(IModelStatus.NotFound, "Checkpoint not found", Logger.logError, loggerCategory);
+      throw new IModelError(IModelStatus.NotFound, "Checkpoint not found");
 
     const { containerAccessKeyContainer, containerAccessKeySAS, containerAccessKeyAccount, containerAccessKeyDbName } = checkpoints[0];
     if (!containerAccessKeyContainer || !containerAccessKeySAS || !containerAccessKeyAccount || !containerAccessKeyDbName)
-      throw new IModelError(IModelStatus.BadRequest, "Invalid checkpoint in iModelHub", Logger.logError, loggerCategory);
+      throw new IModelError(IModelStatus.BadRequest, "Invalid checkpoint in iModelHub");
 
     return {
       container: containerAccessKeyContainer,
       auth: containerAccessKeySAS,
-      daemonDir: bcvDaemonCachePath,
+      daemonDir: process.env.BLOCKCACHE_DIR,
       storageType: "azure?sas=1",
       user: containerAccessKeyAccount,
       dbAlias: containerAccessKeyDbName,
