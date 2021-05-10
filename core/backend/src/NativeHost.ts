@@ -111,7 +111,7 @@ class NativeAppHandler extends IpcHandler implements NativeAppFunctions {
     };
 
     if (reportProgress) {
-      const interval = progressInterval ?? 500; // by default, only send progress events every 500 milliseconds
+      const interval = progressInterval ?? 250; // by default, only send progress events every 250 milliseconds
       let nextTime = Date.now() + interval;
       args.onProgress = (loaded, total) => {
         const now = Date.now();
@@ -133,7 +133,6 @@ class NativeAppHandler extends IpcHandler implements NativeAppFunctions {
 
   public async requestCancelDownloadBriefcase(fileName: string): Promise<boolean> {
     const job = Downloads.isInProgress(fileName);
-    console.log(`job=${job}`);
     if (job)
       (job.request as any).abort = 1;
     return job !== undefined;
