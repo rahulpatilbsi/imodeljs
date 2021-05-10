@@ -28,7 +28,7 @@ describe("NativeApp Download (#integration)", () => {
 
   after(async () => ElectronApp.shutdown());
 
-  it.only("Download Briefcase with progress events (#integration)", async () => {
+  it("Download Briefcase with progress events (#integration)", async () => {
     let events = 0;
     let loaded = 0;
     let total = 0;
@@ -59,7 +59,7 @@ describe("NativeApp Download (#integration)", () => {
     });
   });
 
-  it.only("Should be able to cancel download (#integration)", async () => {
+  it("Should be able to cancel download (#integration)", async () => {
     const locTestIModelId = await NativeAppTest.getTestIModelId(testProjectId, "Stadium Dataset 1");
 
     const watch = new StopWatch("", true);
