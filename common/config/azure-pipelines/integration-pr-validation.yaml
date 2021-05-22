@@ -26,7 +26,8 @@ jobs:
   - job: Node_12_x
     condition: succeeded()
     pool:
-      vmImage: ubuntu-latest
+      # vmImage: ubuntu-latest
+      name: iModeljs Linux
     steps:
       - template: templates/integration-test-steps.yaml
         parameters:
@@ -34,6 +35,7 @@ jobs:
   - job: Node_10_x
     condition: and(succeeded(), ne(variables['Build.Reason'], 'PullRequest'))
     pool:
+      name: iModeljs Linux
       vmImage: ubuntu-latest
     steps:
       - template: templates/integration-test-steps.yaml
@@ -42,7 +44,7 @@ jobs:
   - job: Node_10_17
     condition: and(succeeded(), ne(variables['Build.Reason'], 'PullRequest'))
     pool:
-      vmImage: ubuntu-latest
+      name: iModeljs Linux
     steps:
       - template: templates/integration-test-steps.yaml
         parameters:
