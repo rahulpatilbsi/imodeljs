@@ -6,8 +6,12 @@
       "logLevel": "None"
     },
     {
-      "category": "imodeljs-backend.BriefcaseManager",
-      "logLevel": "Error"
+      "category": "imodeljs-backend.IModelDb",
+      "logLevel": "Info"
+    },
+    {
+      "category": "backend-itwin-client.FileHandlers",
+      "logLevel": "Info"
     }
   ]
 }
