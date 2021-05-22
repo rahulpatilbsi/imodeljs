@@ -6,6 +6,7 @@ import { DbResult, GuidString, Id64, Id64String, Logger, LogLevel, PerfLogger } 
 import {
   ChangedValueState, ChangeOpCode, ColorDef, IModel, IModelVersion, SubCategoryAppearance,
 } from "@bentley/imodeljs-common";
+import { NativeLoggerCategory } from "@bentley/imodeljs-native";
 import { TestUsers, TestUtility } from "@bentley/oidc-signin-tool";
 import { assert } from "chai";
 import * as path from "path";
@@ -74,8 +75,8 @@ describe("ChangeSummary (#integration)", () => {
   let readWriteTestIModelId: GuidString;
 
   before(async () => {
-    Logger.setLevel("DgnCore", LogLevel.Error);
-    Logger.setLevel("BeSQLite", LogLevel.Error);
+    Logger.setLevel(NativeLoggerCategory.DgnCore, LogLevel.Error);
+    Logger.setLevel(NativeLoggerCategory.BeSQLite, LogLevel.Error);
 
     requestContext = await TestUtility.getAuthorizedClientRequestContext(TestUsers.regular);
 

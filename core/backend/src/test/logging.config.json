@@ -12,6 +12,10 @@
     {
       "category": "backend-itwin-client.FileHandlers",
       "logLevel": "Info"
+    },
+    {
+      "category": "Performance",
+      "logLevel": "Info"
     }
   ]
 }
