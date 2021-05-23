@@ -21,6 +21,7 @@ import { IModelBankArgs, IModelBankUtils } from "./IModelBankUtils";
 import { IModelBridge } from "./IModelBridge";
 import { ServerArgs } from "./IModelHubUtils";
 import { Synchronizer } from "./Synchronizer";
+import { BridgeIssueReporter } from "./BridgeIssueReporter";
 
 /** @beta */
 export const loggerCategory: string = BridgeLoggerCategory.Framework;
@@ -69,6 +70,7 @@ export class BridgeRunner {
 
   private _bridgeArgs: BridgeJobDefArgs;
   private _serverArgs?: ServerArgs | IModelBankArgs;
+  private _issueReporter?: BridgeIssueReporter;
 
   public getCacheDirectory() {
     if (this._bridgeArgs.isSnapshot) {
@@ -168,6 +170,8 @@ export class BridgeRunner {
     }
     await this._bridge.initialize(this._bridgeArgs);
 
+    this._bridge.issueReporter = this._issueReporter;
+
     let iModelDbBuilder: IModelDbBuilder;
     if (this._bridgeArgs.isSnapshot) {
       iModelDbBuilder = new SnapshotDbBuilder(this._bridge, this._bridgeArgs);
@@ -190,12 +194,17 @@ export class BridgeRunner {
       await this._bridge.onOpenIModel();
       await iModelDbBuilder.updateExistingIModel();
     } finally {
+      this._bridge.issueReporter?.publishReport();
       if (iModelDbBuilder.imodel.isBriefcaseDb() || iModelDbBuilder.imodel.isSnapshotDb()) {
         iModelDbBuilder.imodel.close();
       }
     }
 
     return BentleyStatus.SUCCESS;
+  }
+
+  public setIssueReporter(issueReporter: BridgeIssueReporter) {
+    this._issueReporter = issueReporter;
   }
 
   private async loadBridge(bridgeModulePath: string): Promise<boolean> {
@@ -482,13 +491,13 @@ class BriefcaseDbBuilder extends IModelDbBuilder {
       throw new Error("Must initialize IModelId before using");
     let props: LocalBriefcaseProps;
     if (this._bridgeArgs.argsJson && this._bridgeArgs.argsJson.briefcaseId) {
-      props = await BriefcaseManager.downloadBriefcase(this._requestContext, {briefcaseId: this._bridgeArgs.argsJson.briefcaseId, contextId: this._serverArgs.contextId, iModelId: this._serverArgs.iModelId});
+      props = await BriefcaseManager.downloadBriefcase(this._requestContext, { briefcaseId: this._bridgeArgs.argsJson.briefcaseId, contextId: this._serverArgs.contextId, iModelId: this._serverArgs.iModelId });
     } else {
-      props = await BriefcaseManager.downloadBriefcase(this._requestContext, {contextId: this._serverArgs.contextId, iModelId: this._serverArgs.iModelId});
-      if(this._bridgeArgs.argsJson) {
+      props = await BriefcaseManager.downloadBriefcase(this._requestContext, { contextId: this._serverArgs.contextId, iModelId: this._serverArgs.iModelId });
+      if (this._bridgeArgs.argsJson) {
         this._bridgeArgs.argsJson.briefcaseId = props.briefcaseId; // don't overwrite other arguments if anything is passed in
       } else {
-        this._bridgeArgs.argsJson= {briefcaseId: props.briefcaseId};
+        this._bridgeArgs.argsJson = { briefcaseId: props.briefcaseId };
       }
     }
     let briefcaseDb: BriefcaseDb | undefined;
