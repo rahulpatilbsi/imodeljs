@@ -1,6 +1,59 @@
 # Change Log - @bentley/imodeljs-backend
 
-This log was last generated on Thu, 08 Apr 2021 14:30:09 GMT and should not be manually modified.
+This log was last generated on Thu, 20 May 2021 15:06:26 GMT and should not be manually modified.
+
+## 2.15.5
+Thu, 20 May 2021 15:06:26 GMT
+
+_Version update only_
+
+## 2.15.4
+Tue, 18 May 2021 21:59:07 GMT
+
+_Version update only_
+
+## 2.15.3
+Mon, 17 May 2021 13:31:37 GMT
+
+_Version update only_
+
+## 2.15.2
+Wed, 12 May 2021 18:08:13 GMT
+
+_Version update only_
+
+## 2.15.1
+Wed, 05 May 2021 13:18:31 GMT
+
+_Version update only_
+
+## 2.15.0
+Fri, 30 Apr 2021 12:36:58 GMT
+
+### Updates
+
+- Update test for AzCopyFileHandler
+- Fix tests for changed elements processing
+- Properly declare changeSetId variables as string.
+- Promote display-related APIs.
+- IModelDb.generateElementGraphics can generate graphics for a non-persistent geometry stream.
+- Add TypeScript wrappers for ExternalSource and related classes and relationships.
+- Fixes to desktop and iOS apps.
+- Remove deprecated ElementEditor that was replaced by EditCommands.
+- rename (deprecate) BriefcaseIdValue.Standalone to BriefcaseIdValue.Unassigned to reduce confusion
+- Add onModelsChanged and onModelGeometryChanged events to TxnManager.
+- Saving & restoring Electron main window size, position & maximized state
+- add NativeHost.settingsStore
+
+## 2.14.4
+Thu, 22 Apr 2021 21:07:33 GMT
+
+_Version update only_
+
+## 2.14.3
+Thu, 15 Apr 2021 15:13:16 GMT
+
+_Version update only_
 
 ## 2.14.2
 Thu, 08 Apr 2021 14:30:09 GMT

@@ -7,12 +7,8 @@
       "allowedCategories": [ "internal" ]
     },
     {
-      "name": "@azure-tools/azcopy-node",
-      "allowedCategories": [ "backend" ]
-    },
-    {
       "name": "@azure/storage-blob",
-      "allowedCategories": [ "backend", "frontend" ]
+      "allowedCategories": [ "backend" ]
     },
     {
       "name": "@babel/core",
@@ -60,11 +56,7 @@
     },
     {
       "name": "@bentley/ecschema-rpcinterface-common",
-      "allowedCategories": [ "backend", "common", "integration-testing" ]
-    },
-    {
-      "name": "@bentley/ecschema-rpcinterface-impl",
-      "allowedCategories": [ "backend", "common" ]
+      "allowedCategories": [ "backend", "integration-testing" ]
     },
     {
       "name": "@bentley/electron-manager",
@@ -539,8 +531,16 @@
       "allowedCategories": [ "backend", "common", "frontend", "internal" ]
     },
     {
+      "name": "fast-deep-equal",
+      "allowedCategories": [ "frontend" ]
+    },
+    {
       "name": "fast-sha256",
       "allowedCategories": [ "tools" ]
+    },
+    {
+      "name": "fast-sort",
+      "allowedCategories": [ "frontend" ]
     },
     {
       "name": "file-loader",
@@ -655,6 +655,10 @@
       "allowedCategories": [ "tools" ]
     },
     {
+      "name": "jsonpath",
+      "allowedCategories": [ "common" ]
+    },
+    {
       "name": "jsonwebtoken",
       "allowedCategories": [ "backend" ]
     },
@@ -728,7 +732,7 @@
     },
     {
       "name": "nyc",
-      "allowedCategories": [ "backend", "common", "edit", "extensions", "frontend", "integration-testing", "internal", "tools" ]
+      "allowedCategories": [ "backend", "common", "extensions", "frontend", "integration-testing", "internal", "tools" ]
     },
     {
       "name": "object-hash",
@@ -837,10 +841,6 @@
     {
       "name": "react-redux",
       "allowedCategories": [ "frontend", "internal" ]
-    },
-    {
-      "name": "react-resize-detector",
-      "allowedCategories": [ "frontend" ]
     },
     {
       "name": "react-router-dom",

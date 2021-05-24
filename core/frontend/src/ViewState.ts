@@ -13,7 +13,7 @@ import {
 } from "@bentley/geometry-core";
 import {
   AnalysisStyle, AxisAlignedBox3d, Camera, Cartographic, ColorDef,
-  FeatureAppearance, Frustum, GlobeMode, GraphicParams, GridOrientationType, ModelClipGroups, Npc, RenderMaterial,
+  FeatureAppearance, Frustum, GlobeMode, GraphicParams, GridOrientationType, ModelClipGroups, Npc, RenderMaterial, RenderSchedule,
   SubCategoryOverride, TextureMapping, ViewDefinition2dProps, ViewDefinition3dProps, ViewDefinitionProps, ViewDetails,
   ViewDetails3d, ViewFlags, ViewStateProps,
 } from "@bentley/imodeljs-common";
@@ -29,7 +29,7 @@ import { NotifyMessageDetails, OutputMessagePriority } from "./NotificationManag
 import { GraphicType } from "./render/GraphicBuilder";
 import { RenderClipVolume } from "./render/RenderClipVolume";
 import { RenderMemory } from "./render/RenderMemory";
-import { RenderScheduleState } from "./RenderScheduleState";
+import {RenderScheduleState } from "./RenderScheduleState";
 import { StandardView, StandardViewId } from "./StandardView";
 import { DisclosedTileTreeSet, TileTreeReference } from "./tile/internal";
 import { DecorateContext, SceneContext } from "./ViewContext";
@@ -212,10 +212,18 @@ export abstract class ViewState extends ElementState {
   /** Get the AnalysisDisplayProperties from the displayStyle of this ViewState. */
   public get analysisStyle(): AnalysisStyle | undefined { return this.displayStyle.settings.analysisStyle; }
 
-  /** Get the RenderSchedule.Script from the displayStyle of this viewState
-   * @internal
+  /** The [RenderSchedule.Script]($common) that animates the contents of the view, if any.
+   * @see [[DisplayStyleState.scheduleScript]].
+   * @beta
    */
-  public get scheduleScript(): RenderScheduleState.Script | undefined { return this.displayStyle.scheduleScript; }
+  public get scheduleScript(): RenderSchedule.Script | undefined {
+    return this.displayStyle.scheduleScript;
+  }
+
+  /** @internal */
+  public get scheduleState(): RenderScheduleState | undefined {
+    return this.displayStyle.scheduleState;
+  }
 
   /** Get the globe projection mode.
    * @internal
@@ -235,12 +243,7 @@ export abstract class ViewState extends ElementState {
     return json;
   }
 
-  /** Asynchronously load any required data for this ViewState from the backend.
-   * @note callers should await the Promise returned by this method before using this ViewState.
-   * @see [Views]($docs/learning/frontend/Views.md)
-   */
-  public async load(): Promise<void> {
-    await this.iModel.backgroundMapLocation.initialize(this.iModel);
+  private async loadAcs(): Promise<void> {
     this._auxCoordSystem = undefined;
     const acsId = this.getAuxiliaryCoordinateSystemId();
     if (Id64.isValid(acsId)) {
@@ -250,13 +253,30 @@ export abstract class ViewState extends ElementState {
           this._auxCoordSystem = AuxCoordSystemState.fromProps(props[0], this.iModel);
       } catch { }
     }
+  }
+
+  /** Asynchronously load any required data for this ViewState from the backend.
+   * @note callers should await the Promise returned by this method before using this ViewState.
+   * @see [Views]($docs/learning/frontend/Views.md)
+   */
+  public async load(): Promise<void> {
+    const promises = [
+      this.iModel.backgroundMapLocation.initialize(this.iModel),
+      this.loadAcs(),
+      this.displayStyle.load(),
+    ];
 
     const subcategories = this.iModel.subcategories.load(this.categorySelector.categories);
     if (undefined !== subcategories)
-      await subcategories.promise;
+      promises.push(subcategories.promise.then((_) => { }));
+
+    await Promise.all(promises);
   }
 
-  /** Returns true if all [[TileTree]]s required by this view have been loaded. */
+  /** Returns true if all [[TileTree]]s required by this view have been loaded.
+   * Note that the map tile trees associated to the viewport rather than the view, to check the
+   * map tiles as well call [[Viewport.areAreAllTileTreesLoaded]].
+   */
   public get areAllTileTreesLoaded(): boolean {
     let allLoaded = true;
     this.forEachTileTreeRef((ref) => {
@@ -965,14 +985,22 @@ export abstract class ViewState extends ElementState {
   public hasSameCoordinates(other: ViewState): boolean {
     if (this.iModel !== other.iModel)
       return false;
+
+    // Spatial views view any number of spatial models all sharing one coordinate system.
     if (this.isSpatialView() && other.isSpatialView())
       return true;
+
+    // People sometimes mistakenly stick 2d models into spatial views' model selectors.
+    if (this.isSpatialView() || other.isSpatialView())
+      return false;
+
+    // Non-spatial views view exactly one model. If they view the same model, they share a coordinate system.
     let allowView = false;
     this.forEachModel((model) => {
-      if (!allowView && other.viewsModel(model.id))
-        allowView = true;
+      allowView ||= other.viewsModel(model.id);
     });
-    return allowView; // Accept if this view shares a model in common with target.
+
+    return allowView;
   }
 
   public getUpVector(point: Point3d): Vector3d {
@@ -1888,7 +1916,6 @@ export abstract class ViewState3d extends ViewState {
     const mapParams = new TextureMapping.Params();
     const transform = new TextureMapping.Trans2x3(0, 1, 0, 1, 0, 0);
     mapParams.textureMatrix = transform;
-    mapParams.textureMatrix.setTransform();
     matParams.textureMapping = new TextureMapping(texture, mapParams);
     const material = context.viewport.target.renderSystem.createMaterial(matParams, this.iModel);
     if (!material)

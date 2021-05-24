@@ -1,6 +1,61 @@
 # Change Log - @bentley/ui-framework
 
-This log was last generated on Thu, 08 Apr 2021 14:30:09 GMT and should not be manually modified.
+This log was last generated on Thu, 20 May 2021 15:06:27 GMT and should not be manually modified.
+
+## 2.15.5
+Thu, 20 May 2021 15:06:26 GMT
+
+### Updates
+
+- Remove framework version condition from floatWidget and dockWidget. This was causing problems in the sample showcase.
+
+## 2.15.4
+Tue, 18 May 2021 21:59:07 GMT
+
+_Version update only_
+
+## 2.15.3
+Mon, 17 May 2021 13:31:38 GMT
+
+### Updates
+
+- Clean up styling in StatusBar.css
+
+## 2.15.2
+Wed, 12 May 2021 18:08:13 GMT
+
+_Version update only_
+
+## 2.15.1
+Wed, 05 May 2021 13:18:31 GMT
+
+_Version update only_
+
+## 2.15.0
+Fri, 30 Apr 2021 12:36:58 GMT
+
+### Updates
+
+- Add UiSettingsPage, AppUiSettings, and ability to register UserSettingsProvider to provide default settings from UsSettingsStorage.
+- Properly declare changeSetId variables as string.
+- Adding ability to open Message Center on demand
+- Cache element ids when determining visbility in ModelsTree
+- Fix compatibility issue when multiple versions of `rxjs` are in use.
+- Publish APIs used bu iTwinViewer.
+
+## 2.14.4
+Thu, 22 Apr 2021 21:07:34 GMT
+
+### Updates
+
+- Update to get activeViewPort by monitoring ContentViewManager.onActiveContentChangedEvent this elimates issue where ViewManager active viewport changes occur before all UI components are mounted and listening.
+
+## 2.14.3
+Thu, 15 Apr 2021 15:13:16 GMT
+
+### Updates
+
+- Cleanup statusbar styling to ensure items are centered and do not overflow area.
 
 ## 2.14.2
 Thu, 08 Apr 2021 14:30:09 GMT

@@ -20,7 +20,7 @@ import { SceneContext } from "../ViewContext";
 import { Viewport } from "../Viewport";
 import { ViewRect } from "../ViewRect";
 import { GraphicBranch, GraphicBranchOptions } from "./GraphicBranch";
-import { GraphicBuilder, GraphicType } from "./GraphicBuilder";
+import { BatchOptions, GraphicBuilder, GraphicBuilderOptions, GraphicType } from "./GraphicBuilder";
 import { InstancedGraphicParams } from "./InstancedGraphicParams";
 import { MeshArgs, PolylineArgs } from "./primitives/mesh/MeshPrimitives";
 import { RealityMeshPrimitive } from "./primitives/mesh/RealityMeshPrimitive";
@@ -265,11 +265,19 @@ export abstract class RenderSystem implements IDisposable {
    * @see [[RenderContext.createGraphicBuilder]].
    * @see [[Decorator]]
    */
-  public abstract createGraphicBuilder(placement: Transform, type: GraphicType, viewport: Viewport, pickableId?: Id64String): GraphicBuilder;
+  public createGraphicBuilder(placement: Transform, type: GraphicType, viewport: Viewport, pickableId?: Id64String): GraphicBuilder {
+    const pickable = undefined !== pickableId ? { id: pickableId } : undefined;
+    return this.createGraphic({ type, viewport, placement, pickable });
+  }
+
+  /** Obtain a [[GraphicBuilder]] from which to produce a [[RenderGraphic]].
+   * @param options Options describing how to create the builder.
+   * @returns A builder that produces a [[RenderGraphic]].
+   */
+  public abstract createGraphic(options: GraphicBuilderOptions): GraphicBuilder;
 
   /** Obtain an object capable of producing a custom screen-space effect to be applied to the image rendered by a [[Viewport]].
    * @returns undefined if screen-space effects are not supported by this RenderSystem.
-   * @beta
    */
   public createScreenSpaceEffectBuilder(_params: ScreenSpaceEffectBuilderParams): ScreenSpaceEffectBuilder | undefined {
     return undefined;
@@ -381,7 +389,7 @@ export abstract class RenderSystem implements IDisposable {
   /** Create a RenderGraphic consisting of batched [[Feature]]s.
    * @internal
    */
-  public abstract createBatch(graphic: RenderGraphic, features: PackedFeatureTable, range: ElementAlignedBox3d, tileId?: string): RenderGraphic;
+  public abstract createBatch(graphic: RenderGraphic, features: PackedFeatureTable, range: ElementAlignedBox3d, options?: BatchOptions): RenderGraphic;
 
   /** Create a graphic that assumes ownership of another graphic.
    * @param ownedGraphic The RenderGraphic to be owned.
@@ -520,7 +528,6 @@ export abstract class RenderSystem implements IDisposable {
    * @note Context loss is reported by the browser some short time *after* it has occurred. It is not possible to determine the specific cause.
    * @see [[TileAdmin.gpuMemoryLimit]] to limit the amount of GPU memory consumed thereby reducing the likelihood of context loss.
    * @see [[TileAdmin.totalTileContentBytes]] for the amount of GPU memory allocated for tile graphics.
-   * @beta
    */
   public static async contextLossHandler(): Promise<any> {
     const msg = IModelApp.i18n.translate("iModelJs:Errors.WebGLContextLost");
