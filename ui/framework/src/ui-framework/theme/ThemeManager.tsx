@@ -8,9 +8,10 @@
 
 import * as React from "react";
 import { connect } from "react-redux";
-import { ThemeProvider, ThemeType } from "@itwin/itwinui-react";
+import { ThemeType } from "@itwin/itwinui-react";
 import { FrameworkState } from "../redux/FrameworkState";
 import { UiFramework } from "../UiFramework";
+import { ThemeProvider } from "./ThemeProvider";
 
 /** Enum for the Color Theme string.
  * @public

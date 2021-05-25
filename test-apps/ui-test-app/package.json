@@ -120,7 +120,7 @@
     "mobx": "^5.8.0",
     "mobx-react": "^5.4.3",
     "react": "^16.8.0",
-    "react-compound-slider": "^2.5.0",
+    "react-compound-slider": "file:../../../react-compound-slider-3.3.1.tgz",
     "react-dom": "^16.8.0",
     "react-redux": "^7.2.0",
     "react-beautiful-dnd": "^13.0.0",

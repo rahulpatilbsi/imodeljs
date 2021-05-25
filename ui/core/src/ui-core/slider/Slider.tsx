@@ -10,7 +10,7 @@ import "./Slider.scss";
 import classnames from "classnames";
 import * as React from "react";
 import {
-  Slider as CompoundSlider, GetRailProps, GetTrackProps, Handles, Rail, SliderItem, SliderModeFunction, Ticks, Tracks,
+  Slider as CompoundSlider, CustomMode, GetRailProps, GetTrackProps, Handles, Rail, SliderItem, Ticks, Tracks,
 } from "react-compound-slider";
 import { Tooltip } from "@itwin/itwinui-react";
 import { CommonProps } from "../utils/Props";
@@ -39,10 +39,10 @@ export interface SliderProps extends CommonProps {
     * 1 - allows handles to cross each other.
     * 2 - keeps the sliders from crossing and separated by a step.
     * 3 - makes the handles pushable and keep them a step apart.
-    * function - SliderModeFunction that will be passed the current values and the incoming update.
+    * function - CustomMode that will be passed the current values and the incoming update.
     *  Your function should return what the mode should be set as.
     */
-  mode?: number | SliderModeFunction;
+  mode?: 1 | 2 | 3 | CustomMode;
 
   /** Indicates whether the display of the Slider values is reversed. */
   reversed?: boolean;

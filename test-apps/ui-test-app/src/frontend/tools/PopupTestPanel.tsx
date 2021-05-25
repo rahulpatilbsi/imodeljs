@@ -15,6 +15,7 @@ import "./PopupTestPanel.scss";
 import { AbstractToolbarProps, BadgeType, RelativePosition } from "@bentley/ui-abstract";
 import { WeightPickerHost } from "../appui/frontstages/component-examples/ComponentExamplesProvider";
 import { Button } from "@itwin/itwinui-react";
+import { Slider } from "@bentley/ui-core";
 
 export function DatePickerHost(props: DatePickerPopupButtonProps) {
   const { onDateChange, selected, ...otherProp } = props;
@@ -69,6 +70,7 @@ export function PopupTestPanel() {
         <Button style={{ width: "180px" }} onClick={handleOpenModelessClick}>Open Modeless</Button>
         <Button style={{ width: "180px" }} onClick={handleShowToolbarClick}>Open Toolbar</Button>
         <WeightPickerHost activeWeight={3} onLineWeightPick={() => { }} />
+        <Slider min={0} max={100} values={[50]} step={1} showTooltip />
         {true && <div className="test-table-widget-container">
           <TableExampleContent />
         </div>}

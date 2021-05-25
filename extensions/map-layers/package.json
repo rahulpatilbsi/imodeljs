@@ -83,7 +83,7 @@
   "dependencies": {
     "classnames": "^2.3.1",
     "react-beautiful-dnd": "^13.0.0",
-    "react-compound-slider": "^2.5.0",
+    "react-compound-slider": "file:../../../react-compound-slider-3.3.1.tgz",
     "react-select": "3.1.0"
   },
   "peerDependencies": {
