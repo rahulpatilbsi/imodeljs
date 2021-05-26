@@ -227,8 +227,6 @@ export type ContentDescriptorRpcRequestOptions = PresentationRpcRequestOptions<C
 // @public
 export enum ContentFlags {
     DistinctValues = 16,
-    // @beta
-    IncludeInputKeys = 256,
     KeysOnly = 1,
     MergeResults = 8,
     NoFields = 32,
@@ -1121,8 +1119,6 @@ export class Item {
     };
     static fromJSON(json: ItemJSON | string | undefined): Item | undefined;
     imageId: string;
-    // @beta
-    inputKeys?: InstanceKey[];
     isFieldMerged(fieldName: string): boolean;
     label: LabelDefinition;
     mergedFieldNames: string[];
@@ -1145,8 +1141,6 @@ export interface ItemJSON {
     };
     // (undocumented)
     imageId: string;
-    // @beta (undocumented)
-    inputKeys?: InstanceKeyJSON[];
     // (undocumented)
     labelDefinition: LabelDefinitionJSON;
     // (undocumented)

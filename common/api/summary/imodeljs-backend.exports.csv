@@ -22,19 +22,20 @@ public;BriefcaseDb
 public;BriefcaseId = number
 public;BriefcaseIdValue
 deprecated;BriefcaseIdValue
-public;BriefcaseManager
+beta;BriefcaseManager
 public;class Callout 
 public;Category 
 public;CategoryOwnsSubCategories 
 public;CategorySelector 
 internal;ChangedElementsDb 
+internal;ChangeSetToken
 beta;ChangeSummary
 beta;ChangeSummaryExtractContext
 beta;ChangeSummaryExtractOptions
 beta;ChangeSummaryManager
 public;ChannelRootAspect 
 internal;CheckpointManager
-public;CheckpointProps
+beta;CheckpointProps
 public;ClassRegistry
 beta;class CloudStorageService
 beta;CloudStorageServiceCredentials
@@ -259,7 +260,7 @@ public;PhysicalTypeIsOfPhysicalMaterial
 public;PlanCallout 
 public;Platform
 internal;ProcessChangesetOptions
-public;ProgressFunction = (loaded: number, total: number) => number
+beta;ProgressFunction = (loaded: number, total: number) => number
 beta;class RecipeDefinitionElement 
 public;Relationship 
 public;Relationships
@@ -269,7 +270,7 @@ public;RenderMaterialOwnsRenderMaterials
 beta;RenderTimeline 
 public;RepositoryLink 
 public;RepositoryModel 
-public;RequestNewBriefcaseArg = RequestNewBriefcaseProps &
+beta;RequestNewBriefcaseArg = RequestNewBriefcaseProps &
 public;class RoleElement 
 public;RoleModel 
 public;Schema
