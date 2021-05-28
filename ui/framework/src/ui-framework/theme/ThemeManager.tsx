@@ -68,6 +68,10 @@ interface State {
  */
 class ThemeManagerComponent extends React.Component<ThemeProps, State> {
 
+  public readonly state: State = {
+    ownerDocument: undefined,
+  };
+
   public componentDidMount() {
     this._setTheme(this.props.theme);
   }
@@ -90,7 +94,7 @@ class ThemeManagerComponent extends React.Component<ThemeProps, State> {
   };
 
   private _handleRefSet = (popupDiv: HTMLElement | null) => {
-    const ownerDocument = popupDiv?.ownerDocument ?? null;
+    const ownerDocument = popupDiv?.ownerDocument ?? undefined;
     if (ownerDocument) {
       this.setState({ ownerDocument });
     }
