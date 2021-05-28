@@ -59,9 +59,14 @@ function mapStateToProps(state: any) {
   };
 }
 
+/** @internal */
+interface State {
+  ownerDocument: Document | undefined;
+}
+
 /** ThemeManagerComponent handles setting themes.
  */
-class ThemeManagerComponent extends React.Component<ThemeProps> {
+class ThemeManagerComponent extends React.Component<ThemeProps, State> {
 
   public componentDidMount() {
     this._setTheme(this.props.theme);
@@ -84,13 +89,22 @@ class ThemeManagerComponent extends React.Component<ThemeProps> {
     document.documentElement.style.setProperty("--buic-widget-opacity", opacity.toString());
   };
 
+  private _handleRefSet = (popupDiv: HTMLElement | null) => {
+    const ownerDocument = popupDiv?.ownerDocument ?? null;
+    if (ownerDocument) {
+      this.setState({ ownerDocument });
+    }
+  };
+
   public render(): React.ReactNode {
     const theme: ThemeType = (this.props.theme === SYSTEM_PREFERRED_COLOR_THEME) ? "os" : this.props.theme as ThemeType;
 
     return (
-      <ThemeProvider theme={theme}>
-        {this.props.children}
-      </ThemeProvider>
+      <div style={{ height: "100%" }} ref={this._handleRefSet}>
+        <ThemeProvider theme={theme} ownerDocument={this.state.ownerDocument}>
+          {this.props.children}
+        </ThemeProvider>
+      </div>
     );
   }
 }

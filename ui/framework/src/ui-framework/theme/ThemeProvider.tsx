@@ -12,7 +12,7 @@ import "@itwin/itwinui-css/css/global.css";
  * Defaults to light theme if none provided or set elsewhere.
  * @param theme Light, dark, or based on OS setting.
  */
-export const useTheme = (ownerDocument: Document, theme?: ThemeType): void => {
+export const useTheme = (theme?: ThemeType, ownerDocument = document): void => {
   React.useLayoutEffect(() => {
     if (!ownerDocument.body.classList.contains("iui-body")) {
       ownerDocument.body.classList.add("iui-body");
@@ -62,18 +62,13 @@ export interface ThemeProviderProps {
    * Optional children.
    */
   children?: React.ReactNode;
+  ownerDocument?: Document;
 }
 
 /**
  * Component providing global styles that are required for all components and allows changing theme.
  */
-export function ThemeProvider({ theme, children }: ThemeProviderProps) {
-  const divRef = React.useRef<HTMLDivElement>(null);
-  const [owningDiv, setOwningDiv] = React.useState<HTMLDivElement | undefined>();
-  React.useLayoutEffect(() => {
-    setOwningDiv(divRef.current ?? undefined);
-  }, [setOwningDiv]);
-
-  useTheme(owningDiv?.ownerDocument ?? document, theme);
-  return <div style={{ height: "100%" }} ref={divRef}>{children}</div>;
+export function ThemeProvider({ theme, children, ownerDocument }: ThemeProviderProps) {
+  useTheme(theme, ownerDocument);
+  return <>{children}</>;
 }
