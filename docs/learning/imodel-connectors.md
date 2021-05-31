@@ -32,7 +32,7 @@ A *connector-job* is the combination of *connection* and *mapping* and may be ru
 - If necessary, connectors store enough information about source data to detect the differences in it between job-runs. In this manner connectors generate *ChangeSets* that are sent to iModelHub. This is the key difference between a Connector and a one-time converter.
 - Connectors locally store a mapping of native source Ids to iModel global Ids. This creates a "back-link" from data in iModels to its source application.
 - Each job generates data in the iModel that is isolated from all other jobs' data. The resulting combined iModel is partitioned at the Subject level of the iModel; each connectors job has its own Subject.
-- Connector jobs *hold the locks* for all of their data, so it may not be modified by other iModel applications.
+- **Connector jobs *hold the locks* for all of their data, so it may not be modified by other iModel applications.**
 
 ## Data Alignment
 
